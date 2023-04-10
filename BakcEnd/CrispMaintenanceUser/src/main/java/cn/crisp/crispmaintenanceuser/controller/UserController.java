@@ -16,6 +16,6 @@ public class UserController {
 
     @GetMapping("/test")
     public R<String> test(){
-        return userService.register(new LoginDto("123", "123"));
+        return R.success("1111");
     }
 }
