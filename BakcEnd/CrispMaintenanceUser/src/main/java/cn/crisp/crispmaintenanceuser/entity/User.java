@@ -2,6 +2,7 @@ package cn.crisp.crispmaintenanceuser.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,11 +19,12 @@ public class User {
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    private long id;
+    @TableId(value = "id")
+    private Long id;
 
-    private int isDeleted;
+    private Integer isDeleted;
 
-    private long version;
+    private Long version;
 
     private String icon;
 

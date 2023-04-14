@@ -24,11 +24,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (loginDto.getPhone() == null || loginDto.getPhone().length() == 0 || loginDto.getPassword().length() == 0 || loginDto.getPassword() == null){
             return R.error("参数错误");
         }
-        redisCache.setCacheObject("USER: " + loginDto.getPhone(), loginDto);
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getPhone, loginDto.getPhone());
         if (userMapper.selectOne(wrapper) != null) return R.error("手机号已被注册");
         User user = new User();
+        user.setId(null);
         user.setPhone(loginDto.getPhone());
         user.setPassword(loginDto.getPassword());
         user.setUsername(loginDto.getPhone());
