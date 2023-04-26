@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -31,8 +33,16 @@ public class UserController {
     @SneakyThrows
     @GetMapping("/test")
     public R<String> test() {
+        List<User> list = new ArrayList<>();
+        List<String> id = new ArrayList<>();
+        list.add(new User(LocalDateTime.now(), LocalDateTime.now(),1L, 0, 0L, "null", "userONe", "123", "123", "mail"));
+        id.add("1");
+        list.add(new User(LocalDateTime.now(), LocalDateTime.now(),2L, 0, 0L, "null", "userTwo", "123", "123", "mail"));
+        id.add("2");
+
+
         //return R.success(esService.docDelete("1", Constants.USER_ES_INDEX_NAME));
         //return R.success(esService.docGet("1", Constants.USER_ES_INDEX_NAME, User.class));
-        return R.success(esService.docInsert(new User(LocalDateTime.now(), LocalDateTime.now(),1L, 0, 0L, "null", "userONe", "123", "123", "mail"), Constants.USER_ES_INDEX_NAME));
+        return R.success(esService.docBatchInsert(list, id, Constants.USER_ES_INDEX_NAME));
     }
 }
