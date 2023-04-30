@@ -2,7 +2,10 @@ package cn.crisp.crispmaintenanceuser.es;
 
 
 import cn.crisp.crispmaintenanceuser.entity.ESIndexInfo;
+import cn.crisp.crispmaintenanceuser.entity.ESMap;
 import cn.crisp.crispmaintenanceuser.entity.User;
+import com.alibaba.nacos.shaded.com.google.common.base.Function;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.apache.http.HttpHost;
@@ -17,6 +20,8 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
@@ -28,11 +33,17 @@ import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -166,6 +177,68 @@ public class ESService {
         return ret.toString();
     }
 
+    /**
+     * 读取全部内容
+     * @param indexName
+     * @return
+     */
+    @SneakyThrows
+    public <T> List<T> docGetAll(String indexName, Class<? extends T> myClass) {
+        SearchRequest request = new SearchRequest();
+        request.indices(indexName);
+        request.source(new SearchSourceBuilder().query(QueryBuilders.matchAllQuery()));
+        SearchResponse response =   client.search(request, RequestOptions.DEFAULT);
+        SearchHits hits = response.getHits();
+        List<T> ret = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        Arrays.stream(hits.getHits()).forEach(h -> {
+            try {
+                ret.add((T)mapper.readValue(h.getSourceAsString(), myClass));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return ret;
+    }
+
+    /**
+     * 多条件查询
+     * @param indexName
+     * @param myClass
+     * @param list,这里是属性名-属性值的列表
+     * @param <T>
+     * @return
+     */
+    @SneakyThrows
+    public <T> List<T> docGet(String indexName, Class<? extends T> myClass, List<ESMap> list) {
+        SearchRequest request = new SearchRequest();
+        request.indices(indexName);
+
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        list.forEach(l -> {
+            boolQueryBuilder.must(QueryBuilders.termQuery(l.getT(), l.getV()));
+        });
+
+        SearchSourceBuilder builder = new SearchSourceBuilder().query(boolQueryBuilder);
+
+        request.source(builder);
+        SearchResponse response =   client.search(request, RequestOptions.DEFAULT);
+        SearchHits hits = response.getHits();
+        List<T> ret = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        Arrays.stream(hits.getHits()).forEach(h -> {
+            try {
+                ret.add((T)mapper.readValue(h.getSourceAsString(), myClass));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return ret;
+    }
 
     /**
      * 查询具体的数据
@@ -186,6 +259,46 @@ public class ESService {
 
         return ret;
     }
+
+    /**
+     * 分页查询
+     * @param indexName
+     * @param myClass
+     * @param list
+     * @param <T>
+     * @return
+     */
+    @SneakyThrows
+    public <T> List<T> docGetPage(String indexName, Class<? extends T> myClass, List<ESMap> list, int page, int pageSize) {
+        SearchRequest request = new SearchRequest();
+        request.indices(indexName);
+
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        list.forEach(l -> {
+            boolQueryBuilder.must(QueryBuilders.termQuery(l.getT(), l.getV()));
+        });
+
+        SearchSourceBuilder builder = new SearchSourceBuilder().query(boolQueryBuilder);
+        builder.from(page);
+        builder.size(pageSize);
+
+        request.source(builder);
+        SearchResponse response =   client.search(request, RequestOptions.DEFAULT);
+        SearchHits hits = response.getHits();
+        List<T> ret = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        Arrays.stream(hits.getHits()).forEach(h -> {
+            try {
+                ret.add((T)mapper.readValue(h.getSourceAsString(), myClass));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return ret;
+    }
+
 
     /**
      * 删除数据
