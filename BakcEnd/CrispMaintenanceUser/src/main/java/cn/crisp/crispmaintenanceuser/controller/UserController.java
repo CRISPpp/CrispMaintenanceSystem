@@ -13,6 +13,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.SneakyThrows;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.settings.Settings;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/user")
@@ -33,6 +36,9 @@ public class UserController {
 
     @Autowired
     ESService esService;
+
+    @Autowired
+    RedissonClient redissonClient;
 
     @SneakyThrows
     @PostMapping("/register")
@@ -62,5 +68,21 @@ public class UserController {
         //return R.success(esService.docDelete("1", Constants.USER_ES_INDEX_NAME));
         //return R.success(esService.docGet("1", Constants.USER_ES_INDEX_NAME, User.class));
         //return R.success(esService.docBatchInsert(list, id, Constants.USER_ES_INDEX_NAME));
+    }
+
+    @GetMapping("/hello")
+    public void test1() {
+        RLock lock = redissonClient.getLock("hello");
+        //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
+        lock.lock();
+        try {
+            System.out.println("加锁" + Thread.currentThread().getId());
+            Thread.sleep(5000);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+            System.out.println("解锁" + Thread.currentThread().getId());
+        }
     }
 }
