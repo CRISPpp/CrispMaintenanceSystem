@@ -31,6 +31,7 @@ public class User {
     @TableId(value = "id")
     private Long id;
 
+    @TableField(fill = FieldFill.INSERT)
     private Integer isDeleted;
 
     private Long version;
@@ -44,4 +45,7 @@ public class User {
     private String phone;
 
     private String mail;
+
+    @TableField(fill = FieldFill.INSERT)
+    private Integer role;
 }
