@@ -64,3 +64,15 @@ minio 8.4.2
 ## 测试
 
 junit 4.13.2
+
+## 监控
+
+mysqld_exporter 0.15.0
+
+prometheus 2.44.0
+
+grafana 9.5.1
+
+# 分布式锁
+
+redisson 3.21.0
