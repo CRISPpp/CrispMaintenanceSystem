@@ -11,6 +11,7 @@ import cn.crisp.crispmaintenanceuser.utils.RedisCache;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.regex.Matcher;
@@ -26,6 +27,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     UserMapper userMapper;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     //判断手机号是否违规
     public  boolean isMobile(String mobiles) {
@@ -50,8 +54,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         user.setId(null);
         user.setPhone(loginDto.getPhone());
-        user.setPassword(loginDto.getPassword());
+        user.setPassword(passwordEncoder.encode(loginDto.getPassword()));
         user.setUsername(loginDto.getPhone());
+
 
         this.save(user);
         //这里获取id存入到es中
@@ -59,5 +64,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         esService.docInsert(user, user.getId().toString(), Constants.USER_ES_INDEX_NAME);
 
         return R.success("添加成功");
+    }
+
+    @Override
+    public User selectByPhone(String phone) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getPhone, phone);
+        return userMapper.selectOne(wrapper);
     }
 }

@@ -2,37 +2,33 @@ package cn.crisp.crispmaintenanceuser.controller;
 
 import cn.crisp.common.Constants;
 import cn.crisp.common.R;
-import cn.crisp.crispmaintenanceuser.Executor.CrispExecutor;
 import cn.crisp.crispmaintenanceuser.dto.LoginDto;
-import cn.crisp.crispmaintenanceuser.entity.ESIndexInfo;
 import cn.crisp.crispmaintenanceuser.entity.ESMap;
 import cn.crisp.crispmaintenanceuser.entity.User;
 import cn.crisp.crispmaintenanceuser.es.ESService;
+import cn.crisp.crispmaintenanceuser.security.service.SysLoginService;
 import cn.crisp.crispmaintenanceuser.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.SneakyThrows;
-import org.elasticsearch.cluster.metadata.MappingMetadata;
-import org.elasticsearch.common.settings.Settings;
+
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
 
 @RestController
 @RequestMapping("/user")
 public class UserController {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private SysLoginService loginService;
 
     @Autowired
     ESService esService;
@@ -42,9 +38,26 @@ public class UserController {
 
     @SneakyThrows
     @PostMapping("/register")
-    public R<String> register(LoginDto loginDto) {
+    public R<String> register(@RequestBody LoginDto loginDto) {
+        System.out.println(loginDto);
         return userService.register(loginDto);
     }
+
+    @PostMapping("/login")
+    public R<String> login(LoginDto loginDto) {
+        try {
+            //准备返回数据
+            String token = loginService.login(loginDto.getPhone(), loginDto.getPassword());
+            if (token != null && token.length() != 0) {
+                return R.success(token);
+            }
+            return R.error("登录信息错误");
+        }catch (Exception e) {
+            return R.error("用户名或密码错误");
+        }
+    }
+
+
 
     @SneakyThrows
     @GetMapping("/test")

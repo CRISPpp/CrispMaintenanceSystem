@@ -7,4 +7,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 public interface UserService extends IService<User> {
     public R<String> register(LoginDto loginDto);
+    public User selectByPhone(String phone);
 }
