@@ -45,7 +45,7 @@ public class WebConf extends WebMvcConfigurationSupport {
      * @return
      */
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }

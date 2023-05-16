@@ -11,6 +11,7 @@ import cn.crisp.crispmaintenanceuser.utils.RedisCache;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +30,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     UserMapper userMapper;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
+    BCryptPasswordEncoder encoder;
+
 
     //判断手机号是否违规
     public  boolean isMobile(String mobiles) {
@@ -54,7 +56,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         user.setId(null);
         user.setPhone(loginDto.getPhone());
-        user.setPassword(passwordEncoder.encode(loginDto.getPassword()));
+        user.setPassword(encoder.encode(loginDto.getPassword()));
         user.setUsername(loginDto.getPhone());
 
 

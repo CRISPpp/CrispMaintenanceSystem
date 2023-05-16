@@ -44,7 +44,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public R<String> login(LoginDto loginDto) {
+    public R<String> login(@RequestBody LoginDto loginDto) {
         try {
             //准备返回数据
             String token = loginService.login(loginDto.getPhone(), loginDto.getPassword());
