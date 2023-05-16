@@ -1,4 +1,4 @@
-package cn.crisp.crispmaintenanceuser.entity;
+package cn.crisp.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;

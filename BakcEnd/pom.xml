@@ -14,7 +14,6 @@
         <module>CrispMaintenanceGateway</module>
         <module>CrispMaintenanceOrder</module>
         <module>CrispMaintenanceDispatch</module>
-        <module>CrispMaintenanceEngineer</module>
     </modules>
 
     <properties>

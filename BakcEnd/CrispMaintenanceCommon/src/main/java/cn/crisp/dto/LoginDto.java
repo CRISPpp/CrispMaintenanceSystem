@@ -1,4 +1,4 @@
-package cn.crisp.crispmaintenanceuser.dto;
+package cn.crisp.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

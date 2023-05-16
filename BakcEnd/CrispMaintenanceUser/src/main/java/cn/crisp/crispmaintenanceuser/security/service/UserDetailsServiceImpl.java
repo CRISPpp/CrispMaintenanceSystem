@@ -1,9 +1,9 @@
 package cn.crisp.crispmaintenanceuser.security.service;
 
-import cn.crisp.common.Constants;
+
 import cn.crisp.crispmaintenanceuser.entity.LoginUser;
-import cn.crisp.crispmaintenanceuser.entity.User;
 import cn.crisp.crispmaintenanceuser.service.UserService;
+import cn.crisp.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

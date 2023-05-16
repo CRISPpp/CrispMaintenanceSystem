@@ -1,8 +1,6 @@
 package cn.crisp.crispmaintenanceuser.security.service;
 
 import cn.crisp.crispmaintenanceuser.entity.LoginUser;
-import cn.crisp.crispmaintenanceuser.service.UserService;
-import cn.crisp.crispmaintenanceuser.utils.RedisCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -1,5 +1,6 @@
 package cn.crisp.crispmaintenanceuser.entity;
 
+import cn.crisp.entity.User;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,7 +17,7 @@ public class LoginUser implements UserDetails, Serializable {
 
     private static final long serialVersionUID = 442353225232L;
     @Setter
-    @Getter private User User;
+    @Getter private cn.crisp.entity.User User;
     @Setter @Getter private String token;
     @Setter @Getter private Long expireTime;
     @Setter @Getter private Long loginTime;
