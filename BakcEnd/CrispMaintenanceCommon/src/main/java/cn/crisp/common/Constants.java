@@ -5,6 +5,10 @@ public class Constants {
      * 用户表es对应index
      */
     public static String USER_ES_INDEX_NAME = "user";
+    /**
+     * 订单索引
+     */
+    public static String INDENT_ES_INDEX_NAME = "indent";
 
     /**
      * 登录用户 redis key

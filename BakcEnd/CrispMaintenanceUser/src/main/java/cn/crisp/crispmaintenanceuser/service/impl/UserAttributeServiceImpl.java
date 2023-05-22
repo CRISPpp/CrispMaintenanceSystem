@@ -1,6 +1,6 @@
 package cn.crisp.crispmaintenanceuser.service.impl;
 
-import cn.crisp.crispmaintenanceuser.entity.UserAttribute;
+import cn.crisp.entity.UserAttribute;
 import cn.crisp.crispmaintenanceuser.mapper.UserAttributeMapper;
 import cn.crisp.crispmaintenanceuser.service.UserAttributeService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

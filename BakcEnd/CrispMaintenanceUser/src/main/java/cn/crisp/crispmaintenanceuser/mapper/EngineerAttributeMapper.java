@@ -1,6 +1,6 @@
 package cn.crisp.crispmaintenanceuser.mapper;
 
-import cn.crisp.crispmaintenanceuser.entity.EngineerAttribute;
+import cn.crisp.entity.EngineerAttribute;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 

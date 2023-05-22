@@ -1,6 +1,6 @@
 package cn.crisp.crispmaintenanceorder.service;
 
-import cn.crisp.crispmaintenanceorder.model.entity.IndentImage;
+import cn.crisp.entity.IndentImage;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 @SuppressWarnings({"all"})

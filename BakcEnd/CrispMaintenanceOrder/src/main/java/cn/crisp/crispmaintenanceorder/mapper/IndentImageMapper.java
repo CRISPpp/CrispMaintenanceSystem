@@ -1,6 +1,6 @@
 package cn.crisp.crispmaintenanceorder.mapper;
 
-import cn.crisp.crispmaintenanceorder.model.entity.IndentImage;
+import cn.crisp.entity.IndentImage;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 

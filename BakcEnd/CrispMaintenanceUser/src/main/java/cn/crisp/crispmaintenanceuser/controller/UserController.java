@@ -6,6 +6,7 @@ import cn.crisp.crispmaintenanceuser.entity.ESMap;
 import cn.crisp.crispmaintenanceuser.es.ESService;
 import cn.crisp.crispmaintenanceuser.security.service.SysLoginService;
 import cn.crisp.crispmaintenanceuser.service.UserService;
+import cn.crisp.crispmaintenanceuser.utils.RedisCache;
 import cn.crisp.dto.LoginDto;
 import cn.crisp.entity.User;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -36,6 +37,8 @@ public class UserController {
     @Autowired
     RedissonClient redissonClient;
 
+    @Autowired
+    RedisCache redisCache;
     @SneakyThrows
     @PostMapping("/register")
     public R<String> register(@RequestBody LoginDto loginDto) {
@@ -85,6 +88,8 @@ public class UserController {
 
     @GetMapping("/hello")
     public void test1() {
+        System.out.println((Object) redisCache.getCacheObject("login_tokens:931f1844-d0f8-4a65-bd3e-0ea6eb1d2902"));
+
         RLock lock = redissonClient.getLock("hello");
         //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
         lock.lock();

@@ -1,6 +1,6 @@
 package cn.crisp.crispmaintenanceuser.service;
 
-import cn.crisp.crispmaintenanceuser.entity.Address;
+import cn.crisp.entity.Address;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 @SuppressWarnings({"all"})
