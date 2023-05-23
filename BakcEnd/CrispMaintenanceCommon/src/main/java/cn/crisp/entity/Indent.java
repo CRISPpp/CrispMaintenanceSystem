@@ -63,6 +63,7 @@ public class Indent {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
+    @TableField(fill = FieldFill.INSERT)
     @Version
     private Long version;
 

@@ -76,8 +76,8 @@ public class UserController {
     }
 
     @PutMapping()
-    public R<User> updateOne(@RequestBody User user) {
-        User ret = userService.updateOne(user);
+    public R<User> updateOne(HttpServletRequest request, @RequestBody User user) {
+        User ret = userService.updateOne(request, user);
         if (ret == null) {
             return R.error("用户不存在");
         }
@@ -85,7 +85,14 @@ public class UserController {
     }
 
 
-
+    @PutMapping("/update_phone")
+    public R<User> updatePhone(HttpServletRequest request, @RequestBody User user) {
+        User ret =  userService.updatePhone(request, user);
+        if (ret == null) {
+            return R.error("请检查用户信息或者用户权限");
+        }
+        return R.success(ret);
+    }
 
     @SneakyThrows
     @GetMapping("/test")

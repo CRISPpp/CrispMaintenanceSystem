@@ -16,5 +16,7 @@ public interface UserService extends IService<User> {
 
     public User selectById(Long id);
 
-    public User updateOne(User user);
+    public User updateOne(HttpServletRequest request,User user);
+
+    public User updatePhone(HttpServletRequest request, User user);
 }

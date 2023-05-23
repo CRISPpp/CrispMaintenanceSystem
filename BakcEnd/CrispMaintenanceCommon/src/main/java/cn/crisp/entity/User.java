@@ -35,9 +35,11 @@ public class User {
     @TableField(fill = FieldFill.INSERT)
     private Integer isDeleted;
 
+    @TableField(fill = FieldFill.INSERT)
     @Version
     private Long version;
 
+    @TableField(fill = FieldFill.INSERT)
     private String icon;
 
     private String username;

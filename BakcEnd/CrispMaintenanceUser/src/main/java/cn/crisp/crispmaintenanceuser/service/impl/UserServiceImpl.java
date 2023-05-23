@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,6 +45,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     RedissonClient redissonClient;
 
+    private void crispCopyUser(User source, User target) {
+        if (target.getIcon() != null) {
+            source.setIcon(target.getIcon());
+        }
+
+        if (target.getPhone() != null) {
+            source.setPhone(target.getPhone());
+        }
+
+        if (target.getMail() != null) {
+            source.setMail(target.getMail());
+        }
+
+        if (target.getUsername() != null) {
+            source.setUsername(target.getUsername());
+        }
+
+        if (target.getRole() != null) {
+            source.setRole(target.getRole());
+        }
+    }
 
     //判断手机号是否违规
     public  boolean isMobile(String mobiles) {
@@ -112,7 +134,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public User updateOne(User user) {
+    public User updateOne(HttpServletRequest request, User user) {
+        User user3 = tokenService.getLoginUser(request).getUser();
+        //试图修改别的用户
+        if (!Objects.equals(user.getId(), user3.getId())) {
+            return null;
+        }
         //将数据库的修改和es的转为原子操作
         RLock lock = redissonClient.getLock(Constants.USER_LOCK_NAME + user.getId().toString());
         //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
@@ -123,7 +150,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (ret == null) {
                 return null;
             }
-            BeanUtils.copyProperties(ret, user);
+            crispCopyUser(ret, user);
             if (!this.updateById(ret)) return null;
             ret = userMapper.selectById(user.getId());
             esService.docInsert(ret, ret.getId().toString(), Constants.USER_ES_INDEX_NAME);
@@ -134,6 +161,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             lock.unlock();
         }
         return ret;
+    }
+
+    @Override
+    public User updatePhone(HttpServletRequest request, User user) {
+        //电话不合格
+        if (!isMobile(user.getPhone())) {
+            return null;
+        }
+
+        //不存在用户
+        User user1 = userMapper.selectById(user.getId());
+        if (user1 == null) {
+            return null;
+        }
+
+        User user3 = tokenService.getLoginUser(request).getUser();
+        //试图修改别的用户
+        if (!Objects.equals(user.getId(), user3.getId())) {
+            return null;
+        }
+
+        //手机号已经存在
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getPhone, user.getPhone());
+        User user2 = userMapper.selectOne(wrapper);
+        if (user2 != null) return null;
+
+        return this.updateOne(request, user);
+
     }
 
 
