@@ -2,6 +2,7 @@ package cn.crisp.crispmaintenanceorder.es;
 
 import cn.crisp.crispmaintenanceorder.entity.ESIndexInfo;
 import cn.crisp.crispmaintenanceorder.entity.ESMap;
+import cn.crisp.crispmaintenanceorder.vo.PagingVo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
@@ -263,7 +264,7 @@ public class ESService {
      * @return
      */
     @SneakyThrows
-    public <T> List<T> docGetPage(String indexName, Class<? extends T> myClass, List<ESMap> list, int page, int pageSize) {
+    public <T> PagingVo<T> docGetPage(String indexName, Class<? extends T> myClass, List<ESMap> list, int page, int pageSize) {
         SearchRequest request = new SearchRequest();
         request.indices(indexName);
 
@@ -290,7 +291,8 @@ public class ESService {
             }
         });
 
-        return ret;
+        //分页结果
+        return new PagingVo<>(hits.getTotalHits().value, ret);
     }
 
 

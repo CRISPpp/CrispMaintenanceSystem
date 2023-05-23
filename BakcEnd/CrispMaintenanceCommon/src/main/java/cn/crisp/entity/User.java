@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+@SuppressWarnings("all")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -47,5 +48,20 @@ public class User {
 
     @TableField(fill = FieldFill.INSERT)
     private Integer role;
+
+    /**
+     * 角色枚举
+     */
+    public static class Role {
+        /**
+         * 普通用户
+         */
+        public static final Integer COMMON_USER = 1;
+
+        /**
+         * 维修工程师
+         */
+        public static final Integer ENGINEER = 2;
+    }
 
 }
