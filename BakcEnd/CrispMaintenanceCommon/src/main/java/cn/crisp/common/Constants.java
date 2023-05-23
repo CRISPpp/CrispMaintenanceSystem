@@ -11,6 +11,16 @@ public class Constants {
     public static String INDENT_ES_INDEX_NAME = "indent";
 
     /**
+     * 用户锁前缀
+     */
+    public static String USER_LOCK_NAME = "user_lock";
+
+    /**
+     * 订单锁前缀
+     */
+    public static String INDENT_LOCK_NAME = "indent_lock";
+
+    /**
      * 登录用户 redis key
      */
     public static final String LOGIN_TOKEN_KEY = "login_tokens:";

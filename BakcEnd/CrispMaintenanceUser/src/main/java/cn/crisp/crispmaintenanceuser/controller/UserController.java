@@ -3,6 +3,7 @@ package cn.crisp.crispmaintenanceuser.controller;
 import cn.crisp.common.Constants;
 import cn.crisp.common.R;
 import cn.crisp.crispmaintenanceuser.entity.ESMap;
+import cn.crisp.crispmaintenanceuser.entity.LoginUser;
 import cn.crisp.crispmaintenanceuser.es.ESService;
 import cn.crisp.crispmaintenanceuser.security.service.SysLoginService;
 import cn.crisp.crispmaintenanceuser.service.UserService;
@@ -17,6 +18,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +61,29 @@ public class UserController {
             return R.error("用户名或密码错误");
         }
     }
+
+
+    @GetMapping("/getByToken")
+    public R<User> getByToken(HttpServletRequest request) {
+        return userService.getByToken(request);
+    }
+
+    @GetMapping("/{id}")
+    public R<User> getById(@PathVariable Long id) {
+        User user = userService.selectById(id);
+        if (user == null) return R.error("用户不存在");
+        return R.success(user);
+    }
+
+    @PutMapping()
+    public R<User> updateOne(@RequestBody User user) {
+        User ret = userService.updateOne(user);
+        if (ret == null) {
+            return R.error("用户不存在");
+        }
+        return R.success(ret);
+    }
+
 
 
 
