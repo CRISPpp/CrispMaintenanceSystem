@@ -13,9 +13,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Transactional
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService{
     @Autowired
@@ -51,7 +52,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return m.matches();
     }
 
-    @Transactional
     @Override
     public R<String> register(LoginDto loginDto) {
         if (loginDto.getPhone() == null || loginDto.getPhone().length() == 0 || loginDto.getPassword().length() == 0 || loginDto.getPassword() == null){
@@ -83,6 +83,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         } catch (Exception e) {
             e.printStackTrace();
+            throw e;
         } finally {
             lock.unlock();
         }
@@ -110,7 +111,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return esService.docGet(id.toString(),Constants.USER_ES_INDEX_NAME, User.class);
     }
 
-    @Transactional
     @Override
     public User updateOne(User user) {
         //将数据库的修改和es的转为原子操作
@@ -119,15 +119,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         lock.lock();
         User ret = null;
         try {
-            if (!this.updateById(user)) return null;
+            ret = userMapper.selectById(user.getId());
+            if (ret == null) {
+                return null;
+            }
+            BeanUtils.copyProperties(ret, user);
+            if (!this.updateById(ret)) return null;
             ret = userMapper.selectById(user.getId());
             esService.docInsert(ret, ret.getId().toString(), Constants.USER_ES_INDEX_NAME);
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            throw e;
         } finally {
             lock.unlock();
         }
         return ret;
     }
+
+
 }
