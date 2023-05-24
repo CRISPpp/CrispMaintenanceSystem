@@ -12,13 +12,16 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @SuppressWarnings({"all"})
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class IndentImage {
+public class IndentImage implements Serializable {
+    private static final long serialVersionUID = 442353225234L;
+
 
     @TableId(value = "id")
     private Long id;

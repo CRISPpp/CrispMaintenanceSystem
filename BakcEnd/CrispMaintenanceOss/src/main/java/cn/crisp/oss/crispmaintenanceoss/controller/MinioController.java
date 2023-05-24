@@ -1,7 +1,11 @@
 package cn.crisp.oss.crispmaintenanceoss.controller;
 
 import cn.crisp.common.R;
+import cn.crisp.oss.crispmaintenanceoss.dto.MailDto;
+import cn.crisp.oss.crispmaintenanceoss.service.MailService;
 import cn.crisp.oss.crispmaintenanceoss.service.TokenService;
+import cn.crisp.oss.crispmaintenanceoss.utils.IdUtils;
+import cn.crisp.oss.crispmaintenanceoss.utils.ValidateCodeUtils;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import lombok.SneakyThrows;
@@ -22,16 +26,19 @@ import java.io.InputStream;
 @RequestMapping("/oss")
 public class MinioController {
     @Autowired
-    MinioClient minioClient;
+    private MinioClient minioClient;
 
     @Value("${minio.endpoint}")
-    String endpoint;
+    private String endpoint;
 
     @Value("${minio.bucketName}")
-    String bucketName;
+    private String bucketName;
 
     @Autowired
-    TokenService tokenService;
+    private TokenService tokenService;
+
+    @Autowired
+    private MailService mailService;
     /**
      * 文件上传
      */
@@ -58,5 +65,21 @@ public class MinioController {
             return R.error("上传失败");
         }
         return R.success(endpoint + "/" + bucketName + "/" + fileName);
+    }
+
+    /**
+     * 发送邮件验证码
+     */
+    @PostMapping("/mail_code")
+    public R<String> sendCode(HttpServletRequest request, @RequestBody MailDto mailDto) {
+        if (tokenService.getLoginUser(request) == null) return R.error("检查登录信息");
+        String code = ValidateCodeUtils.generateValidateCode(4).toString();
+        try {
+            mailService.sendMail(mailDto.getMail(), "CrispMaintenanceSystem", code);
+        }catch (Exception e) {
+            e.printStackTrace();
+            return R.error("发送失败，请检查邮箱信息");
+        }
+        return R.success("发送成功");
     }
 }

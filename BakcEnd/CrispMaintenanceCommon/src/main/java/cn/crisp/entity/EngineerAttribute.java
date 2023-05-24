@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -19,7 +20,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class EngineerAttribute {
+public class EngineerAttribute implements Serializable {
+    private static final long serialVersionUID = 442353225232L;
+
 
     @TableId(value = "id")
     private Long id;
