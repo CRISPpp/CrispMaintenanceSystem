@@ -6,10 +6,14 @@ import cn.crisp.crispmaintenanceuser.entity.ESMap;
 import cn.crisp.crispmaintenanceuser.entity.LoginUser;
 import cn.crisp.crispmaintenanceuser.es.ESService;
 import cn.crisp.crispmaintenanceuser.security.service.SysLoginService;
+import cn.crisp.crispmaintenanceuser.security.service.TokenService;
+import cn.crisp.crispmaintenanceuser.service.AddressService;
 import cn.crisp.crispmaintenanceuser.service.UserService;
 import cn.crisp.crispmaintenanceuser.utils.RedisCache;
 import cn.crisp.dto.LoginDto;
 import cn.crisp.dto.MailUpdateDto;
+import cn.crisp.dto.PasswordUpdateDto;
+import cn.crisp.entity.Address;
 import cn.crisp.entity.User;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.SneakyThrows;
@@ -35,13 +39,20 @@ public class UserController {
     private SysLoginService loginService;
 
     @Autowired
-    ESService esService;
+    private ESService esService;
 
     @Autowired
-    RedissonClient redissonClient;
+    private RedissonClient redissonClient;
 
     @Autowired
-    RedisCache redisCache;
+    private RedisCache redisCache;
+
+    @Autowired
+    private AddressService addressService;
+
+    @Autowired
+    private TokenService tokenService;
+
     @SneakyThrows
     @PostMapping("/register")
     public R<String> register(@RequestBody LoginDto loginDto) {
@@ -90,6 +101,45 @@ public class UserController {
     @PutMapping("/update_mail")
     public R<User> updateMail(HttpServletRequest request, @RequestBody MailUpdateDto mailUpdateDto) {
         return userService.updateMail(request, mailUpdateDto);
+    }
+
+    @PutMapping("/update_password")
+    public R<User> updatePassword(HttpServletRequest request, @RequestBody PasswordUpdateDto passwordUpdateDto) {
+        return userService.updatePassword(request, passwordUpdateDto);
+    }
+
+    /**
+     * 获取用户地址信息
+     * @return
+     */
+    @GetMapping("/address")
+    public R<List<Address>> getAddress(HttpServletRequest request) {
+        return addressService.getAddress(request);
+    }
+
+    @GetMapping("/address/{id}")
+    public R<Address> getOneAddress(HttpServletRequest request, @PathVariable Long id) {
+        Long userId = tokenService.getLoginUser(request).getUser().getId();
+        Address address = addressService.getById(id);
+        if (address == null) return R.error("地址不存在");
+        if (!address.getUserId().equals(userId)) return R.error("无法查询其他用户的地址");
+
+        return R.success(address);
+    }
+
+    @PostMapping("/address")
+    public R<String> addAddress(HttpServletRequest request, @RequestBody Address address) {
+        return addressService.addAddress(request, address);
+    }
+
+    @DeleteMapping("/address/{id}")
+    public R<String> delAddress(HttpServletRequest request, @PathVariable Long id) {
+        return addressService.delAddress(request, id);
+    }
+
+    @PutMapping("/address/{id}")
+    public R<String> updateDefault(HttpServletRequest request, @PathVariable Long id) {
+        return addressService.updateDefault(request, id);
     }
 
     @SneakyThrows

@@ -11,14 +11,23 @@ public class Constants {
     public static String INDENT_ES_INDEX_NAME = "indent";
 
     /**
+     * 地址索引
+     */
+    public static String ADDRESS_ES_INDEX_NAME = "address";
+    /**
      * 用户锁前缀
      */
-    public static String USER_LOCK_NAME = "user_lock";
+    public static String USER_LOCK_NAME = "user_lock:";
 
     /**
      * 订单锁前缀
      */
-    public static String INDENT_LOCK_NAME = "indent_lock";
+    public static String INDENT_LOCK_NAME = "indent_lock:";
+
+    /**
+     * 地址锁前缀
+     */
+    public static String ADDRESS_LOCK_NAME = "address_lock:";
 
     /**
      * 登录用户 redis key
@@ -29,6 +38,11 @@ public class Constants {
      * 邮箱验证码 redis key
      */
     public static final String VALIDATE_MAIL_KEY = "validate_mail:";
+
+    /**
+     * 地址信息
+     */
+    public static final String ADDRESS_KEY = "address:";
 
     /**
      * 删除

@@ -2,6 +2,7 @@ package cn.crisp.crispmaintenanceuser.service.impl;
 
 import cn.crisp.common.Constants;
 import cn.crisp.common.R;
+import cn.crisp.crispmaintenanceuser.entity.LoginUser;
 import cn.crisp.crispmaintenanceuser.es.ESService;
 import cn.crisp.crispmaintenanceuser.mapper.UserMapper;
 import cn.crisp.crispmaintenanceuser.security.service.TokenService;
@@ -9,6 +10,8 @@ import cn.crisp.crispmaintenanceuser.service.UserService;
 import cn.crisp.crispmaintenanceuser.utils.RedisCache;
 import cn.crisp.dto.LoginDto;
 import cn.crisp.dto.MailUpdateDto;
+import cn.crisp.dto.PasswordUpdateDto;
+import cn.crisp.entity.Address;
 import cn.crisp.entity.User;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -241,6 +245,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         user.setMail(mailUpdateDto.getMail());
 
+        return this.updateOne(request, user);
+    }
+
+    @Override
+    public R<User> updatePassword(HttpServletRequest request, PasswordUpdateDto passwordUpdateDto) {
+        User user = tokenService.getLoginUser(request).getUser();
+        if (user == null) return R.error("登录信息错误");
+        if (!(user.getId().equals(passwordUpdateDto.getId()))) return R.error("无法修改其他用户");
+        if (!user.getPassword().equals(encoder.encode(passwordUpdateDto.getOldPassword()))) {
+            return R.error("原密码错误");
+        }
+        user.setPassword(encoder.encode(passwordUpdateDto.getNewPassword()));
         return this.updateOne(request, user);
     }
 

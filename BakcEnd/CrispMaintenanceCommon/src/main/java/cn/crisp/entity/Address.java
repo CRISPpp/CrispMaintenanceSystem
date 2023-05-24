@@ -40,7 +40,8 @@ public class Address implements Serializable {
 
     private Integer longitude;
 
-    private Integer isDefault;
+    @TableField(fill = FieldFill.INSERT)
+    private Integer isDefault; //0非默认，1默认
 
     @TableField(fill = FieldFill.INSERT)
     private Integer isDeleted;
