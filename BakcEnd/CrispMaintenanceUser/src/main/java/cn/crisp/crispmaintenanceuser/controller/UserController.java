@@ -9,6 +9,7 @@ import cn.crisp.crispmaintenanceuser.security.service.SysLoginService;
 import cn.crisp.crispmaintenanceuser.service.UserService;
 import cn.crisp.crispmaintenanceuser.utils.RedisCache;
 import cn.crisp.dto.LoginDto;
+import cn.crisp.dto.MailUpdateDto;
 import cn.crisp.entity.User;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.SneakyThrows;
@@ -77,21 +78,18 @@ public class UserController {
 
     @PutMapping()
     public R<User> updateOne(HttpServletRequest request, @RequestBody User user) {
-        User ret = userService.updateOne(request, user);
-        if (ret == null) {
-            return R.error("用户不存在");
-        }
-        return R.success(ret);
+        return userService.updateOne(request, user);
     }
 
 
     @PutMapping("/update_phone")
     public R<User> updatePhone(HttpServletRequest request, @RequestBody User user) {
-        User ret =  userService.updatePhone(request, user);
-        if (ret == null) {
-            return R.error("请检查用户信息或者用户权限");
-        }
-        return R.success(ret);
+        return userService.updatePhone(request, user);
+    }
+
+    @PutMapping("/update_mail")
+    public R<User> updateMail(HttpServletRequest request, @RequestBody MailUpdateDto mailUpdateDto) {
+        return userService.updateMail(request, mailUpdateDto);
     }
 
     @SneakyThrows

@@ -26,6 +26,11 @@ public class Constants {
     public static final String LOGIN_TOKEN_KEY = "login_tokens:";
 
     /**
+     * 邮箱验证码 redis key
+     */
+    public static final String VALIDATE_MAIL_KEY = "validate_mail:";
+
+    /**
      * 删除
      */
     public static final Character DELETED = '1';

@@ -1,10 +1,13 @@
 package cn.crisp.oss.crispmaintenanceoss.controller;
 
+import cn.crisp.common.Constants;
 import cn.crisp.common.R;
+import cn.crisp.entity.User;
 import cn.crisp.oss.crispmaintenanceoss.dto.MailDto;
 import cn.crisp.oss.crispmaintenanceoss.service.MailService;
 import cn.crisp.oss.crispmaintenanceoss.service.TokenService;
 import cn.crisp.oss.crispmaintenanceoss.utils.IdUtils;
+import cn.crisp.oss.crispmaintenanceoss.utils.RedisCache;
 import cn.crisp.oss.crispmaintenanceoss.utils.ValidateCodeUtils;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -20,6 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 @Slf4j
@@ -39,6 +45,9 @@ public class MinioController {
 
     @Autowired
     private MailService mailService;
+
+    @Autowired
+    private RedisCache redisCache;
     /**
      * 文件上传
      */
@@ -68,12 +77,39 @@ public class MinioController {
     }
 
     /**
+     *检查Email 格式（正则表达式）
+     * @param content
+     * @return
+     */
+    private boolean checkEmailFormat(String content){
+        /*
+         * " \w"：匹配字母、数字、下划线。等价于'[A-Za-z0-9_]'。
+         * "|"  : 或的意思，就是二选一
+         * "*" : 出现0次或者多次
+         * "+" : 出现1次或者多次
+         * "{n,m}" : 至少出现n个，最多出现m个
+         * "$" : 以前面的字符结束
+         */
+        String REGEX="^\\w+((-\\w+)|(\\.\\w+))*@\\w+(\\.\\w{2,3}){1,3}$";
+        Pattern p = Pattern.compile(REGEX);
+        Matcher matcher=p.matcher(content);
+
+        return matcher.matches();
+    }
+
+
+    /**
      * 发送邮件验证码
      */
     @PostMapping("/mail_code")
     public R<String> sendCode(HttpServletRequest request, @RequestBody MailDto mailDto) {
-        if (tokenService.getLoginUser(request) == null) return R.error("检查登录信息");
+        User user = tokenService.getLoginUser(request).getUser();
+        if (user == null) return R.error("登录信息错误，请检查登录信息");
+        if (!checkEmailFormat(mailDto.getMail())) {
+            return R.error("邮箱格式错误");
+        }
         String code = ValidateCodeUtils.generateValidateCode(4).toString();
+        redisCache.setCacheObject(Constants.VALIDATE_MAIL_KEY + mailDto.getMail(), code, 60, TimeUnit.SECONDS);
         try {
             mailService.sendMail(mailDto.getMail(), "CrispMaintenanceSystem", code);
         }catch (Exception e) {
