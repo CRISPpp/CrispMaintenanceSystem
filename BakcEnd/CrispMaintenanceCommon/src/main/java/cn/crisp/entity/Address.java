@@ -36,9 +36,9 @@ public class Address implements Serializable {
 
     private String detail;
 
-    private Integer latitude;
+    private Double latitude;
 
-    private Integer longitude;
+    private Double longitude;
 
     @TableField(fill = FieldFill.INSERT)
     private Integer isDefault; //0非默认，1默认
