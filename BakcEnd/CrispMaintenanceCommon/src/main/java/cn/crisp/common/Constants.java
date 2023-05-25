@@ -45,6 +45,26 @@ public class Constants {
     public static final String ADDRESS_KEY = "address:";
 
     /**
+     * GEO 的 key 名
+     */
+    public static final String GEO_NAME = "geo";
+
+    /**
+     * GEO 中用户放入时的前缀
+     */
+    public static final String GEO_USER_FIELD_PREFIX = "user:";
+
+    /**
+     * GEO 中订单放入时的前缀
+     */
+    public static final String GEO_INDENT_FIELD_PREFIX = "indent:";
+
+    /**
+     * GEO 用于计算订单和维修工程师的距离
+     */
+    public static final String GEO_DIST_NAME = "geo_dist";
+
+    /**
      * 删除
      */
     public static final Character DELETED = '1';

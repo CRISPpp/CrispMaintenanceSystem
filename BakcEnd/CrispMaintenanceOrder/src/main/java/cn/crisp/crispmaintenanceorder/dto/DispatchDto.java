@@ -4,12 +4,7 @@ import lombok.Data;
 
 @SuppressWarnings({"all"})
 @Data
-public class QueryDto<T> {
-    /**
-     * 是否分页
-     */
-    private Boolean paging = true;
-
+public class DispatchDto {
     /**
      * 一页最多几个数据
      */
@@ -21,15 +16,17 @@ public class QueryDto<T> {
     private Integer current = 0;
 
     /**
-     * 筛选条件
+     * 经度
      */
-    private T conditon;
+    private Double longitude;
 
     /**
-     * 需要跳过的个数
-     * @return
+     * 纬度
      */
-    public int getSkip() {
-        return current * size;
-    }
+    private Double latitude;
+
+    /**
+     * 公里数
+     */
+    private Double dist;
 }

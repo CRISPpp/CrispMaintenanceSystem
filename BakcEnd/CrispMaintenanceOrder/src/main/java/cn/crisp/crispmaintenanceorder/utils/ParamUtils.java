@@ -65,7 +65,7 @@ public class ParamUtils {
         for (FieldFunction<T> function : functions) {
             if (function.apply(item) == null) {
                 String field = function.getField();
-                throw new BusinessException(0, "必传字段" + (field == null ? "" : field) + "为null或空串");
+                throw new BusinessException(0, "必传字段" + (field == null ? "" : field) + "为null");
             }
         }
     }

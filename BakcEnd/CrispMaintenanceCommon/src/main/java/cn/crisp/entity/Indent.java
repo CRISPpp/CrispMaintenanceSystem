@@ -39,9 +39,9 @@ public class Indent implements Serializable {
 
     private String addressDetail;
 
-    private Integer latitude;
+    private Double latitude;
 
-    private Integer longitude;
+    private Double longitude;
 
     private String problem;
 

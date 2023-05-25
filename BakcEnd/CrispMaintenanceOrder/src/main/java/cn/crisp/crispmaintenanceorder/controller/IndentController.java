@@ -1,8 +1,7 @@
 package cn.crisp.crispmaintenanceorder.controller;
 
 import cn.crisp.common.R;
-import cn.crisp.crispmaintenanceorder.dto.IndentDto;
-import cn.crisp.crispmaintenanceorder.dto.QueryDto;
+import cn.crisp.crispmaintenanceorder.dto.*;
 import cn.crisp.crispmaintenanceorder.security.service.TokenService;
 import cn.crisp.crispmaintenanceorder.service.IndentService;
 import cn.crisp.crispmaintenanceorder.utils.ParamUtils;
@@ -51,13 +50,57 @@ public class IndentController {
         }
     }
 
+    @PostMapping("/list_unprocessed")
+    public R listUnprocessed(@RequestBody DispatchDto dispatchDto, HttpServletRequest request) {
+        ParamUtils.checkFieldNotNull(
+                dispatchDto,
+                DispatchDto::getLongitude,
+                DispatchDto::getLatitude,
+                DispatchDto::getDist
+        );
+
+        if (dispatchDto.getLongitude() < -180 || dispatchDto.getLongitude() > 180) {
+            throw new BusinessException(0, "经度" + dispatchDto.getLongitude() + "不合法");
+        }
+        if (dispatchDto.getLatitude() < -90 || dispatchDto.getLatitude() > 90) {
+            throw new BusinessException(0, "纬度" + dispatchDto.getLatitude() + "不合法");
+        }
+        if (dispatchDto.getDist() <= 0) {
+            throw new BusinessException(0, "距离必须为正数");
+        }
+
+        //只有维修工程师才可以访问该接口
+        if (!tokenService.getLoginUser(request).getUser().getRole().equals(User.Role.ENGINEER)) {
+            throw new BusinessException(0, "只有维修工程师才可以访问该接口");
+        }
+
+        return R.success(indentService.listUnprocessed(dispatchDto));
+    }
+
+    /**
+     * 根据 id 获取订单信息
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public R getById(@PathVariable("id") Long id) {
+        if (id == null) {
+            throw new BusinessException(0, "id不能为null");
+        }
+        Indent indent = indentService.getById(id);
+        if (indent == null) {
+            throw new BusinessException(0, "订单不存在");
+        }
+        return R.success(indent);
+    }
+
     /**
      * 故障申报
      * @param indentDto
      * @param request
      * @return
      */
-    @PutMapping
+    @PostMapping
     public R applyForFault(@RequestBody IndentDto indentDto, HttpServletRequest request) {
         ParamUtils.checkFieldNotNull(
                 indentDto,
@@ -78,5 +121,61 @@ public class IndentController {
         }
 
         return R.success(indentService.applyForFault(indentDto, request));
+    }
+
+    /**
+     * 接单
+     * @param receiveDto
+     * @param request
+     * @return
+     */
+    @PutMapping("/receive_indent")
+    public R receiveIndent(@RequestBody ReceiveDto receiveDto, HttpServletRequest request) {
+        ParamUtils.checkFieldNotNull(
+                receiveDto,
+                ReceiveDto::getIndentId,
+                ReceiveDto::getLongitude,
+                ReceiveDto::getLatitude
+        );
+        return R.success(indentService.receiveIndent(request, receiveDto));
+    }
+
+    /**
+     * 确认维修成功
+     * @param repairDto
+     * @param request
+     * @return
+     */
+    @PutMapping("/repair")
+    public R repair(@RequestBody RepairDto repairDto, HttpServletRequest request) {
+        ParamUtils.checkFieldNotNull(
+                repairDto,
+                RepairDto::getIndentId,
+                RepairDto::getPhotos
+        );
+        if (repairDto.getPhotos().size() < 1 || repairDto.getPhotos().size() > 3) {
+            throw new BusinessException(0, "维修成功的图片至少 1 张，最多 3 张");
+        }
+        return R.success(indentService.repair(request, repairDto));
+    }
+
+    /**
+     * 评价订单
+     * @param evaluateDto
+     * @param request
+     * @return
+     */
+    @PutMapping("/evaluate")
+    public R evaluate(@RequestBody EvaluateDto evaluateDto, HttpServletRequest request) {
+        ParamUtils.checkFieldNotNull(
+                evaluateDto,
+                EvaluateDto::getIndentId,
+                EvaluateDto::getQuality
+        );
+        double v = evaluateDto.getQuality().doubleValue();
+        if (v < 0.0 || v > 5.0) {
+            throw new BusinessException(0, "评分范围是 0.0 ~ 5.0");
+        }
+        return R.success(indentService.evaluate(request, evaluateDto));
     }
 }
