@@ -22,7 +22,8 @@ CREATE TABLE user_attribute (
                                 create_time DATETIME,
                                 update_time DATETIME,
                                 version BIGINT DEFAULT 0,
-                                balance decimal(10, 2) default 0.0 comment '余额'
+                                balance decimal(10, 2) default 0.0 comment '余额',
+                                user_id BIGINT
 ) comment '用户属性表';
 -- 工程师额外属性
 drop table if exists engineer_attribute;
@@ -32,7 +33,9 @@ CREATE TABLE engineer_attribute (
                                     create_time DATETIME,
                                     update_time DATETIME,
                                     version BIGINT DEFAULT 0,
-                                    balance decimal(10, 2) default 0.0 comment '余额'
+                                    quality decimal(2, 1) default 0.0 comment '星级, 0 - 5',
+                                    balance decimal(10, 2) default 0.0 comment '余额',
+                                    user_id BIGINT
 ) comment '工程师属性表';
 
 -- 地址

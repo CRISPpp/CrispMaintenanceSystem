@@ -27,7 +27,11 @@ public class EngineerAttribute implements Serializable {
     @TableId(value = "id")
     private Long id;
 
+    private Long userId;
+
     private BigDecimal balance;
+
+    private BigDecimal quality;
 
     @TableField(fill = FieldFill.INSERT)
     private Integer isDeleted;

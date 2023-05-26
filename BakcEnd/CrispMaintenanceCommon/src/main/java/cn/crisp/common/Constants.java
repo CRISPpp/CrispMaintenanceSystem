@@ -14,10 +14,31 @@ public class Constants {
      * 地址索引
      */
     public static String ADDRESS_ES_INDEX_NAME = "address";
+
+    /**
+     * 用户属性索引
+     */
+    public static String USER_ATTRIBUTE_ES_INDEX_NAME = "user_attribute";
+
+    /**
+     * 工程师属性索引
+     */
+    public static String ENGINEER_ATTRIBUTE_ES_INDEX_NAME = "engineer_attribute";
+
     /**
      * 用户锁前缀
      */
     public static String USER_LOCK_NAME = "user_lock:";
+
+    /**
+     * 用户属性锁前缀
+     */
+    public static String USER_ATTRIBUTE_LOCK_NAME = "user_attribute_lock:";
+
+    /**
+     * 工程师属性锁前缀
+     */
+    public static String ENGINEER_ATTRIBUTE_LOCK_NAME = "engineer_attribute_lock:";
 
     /**
      * 订单锁前缀

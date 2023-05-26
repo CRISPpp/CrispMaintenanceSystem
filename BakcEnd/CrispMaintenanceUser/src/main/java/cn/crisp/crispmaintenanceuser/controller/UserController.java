@@ -8,13 +8,15 @@ import cn.crisp.crispmaintenanceuser.es.ESService;
 import cn.crisp.crispmaintenanceuser.security.service.SysLoginService;
 import cn.crisp.crispmaintenanceuser.security.service.TokenService;
 import cn.crisp.crispmaintenanceuser.service.AddressService;
+import cn.crisp.crispmaintenanceuser.service.EngineerAttributeService;
+import cn.crisp.crispmaintenanceuser.service.UserAttributeService;
 import cn.crisp.crispmaintenanceuser.service.UserService;
 import cn.crisp.crispmaintenanceuser.utils.RedisCache;
-import cn.crisp.dto.LoginDto;
-import cn.crisp.dto.MailUpdateDto;
-import cn.crisp.dto.PasswordUpdateDto;
+import cn.crisp.dto.*;
 import cn.crisp.entity.Address;
+import cn.crisp.entity.EngineerAttribute;
 import cn.crisp.entity.User;
+import cn.crisp.entity.UserAttribute;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.SneakyThrows;
 
@@ -53,11 +55,16 @@ public class UserController {
     @Autowired
     private TokenService tokenService;
 
+    @Autowired
+    private UserAttributeService userAttributeService;
+
+    @Autowired
+    private EngineerAttributeService engineerAttributeService;
+
     @SneakyThrows
     @PostMapping("/register")
-    public R<String> register(@RequestBody LoginDto loginDto) {
-        System.out.println(loginDto);
-        return userService.register(loginDto);
+    public R<String> register(@RequestBody RegisterDto registerDto) {
+        return userService.register(registerDto);
     }
 
     @PostMapping("/login")
@@ -140,6 +147,56 @@ public class UserController {
     @PutMapping("/address/{id}")
     public R<String> updateDefault(HttpServletRequest request, @PathVariable Long id) {
         return addressService.updateDefault(request, id);
+    }
+
+    @PostMapping("/pay")
+    public R<Boolean> pay(@RequestBody PayDto payDto) {
+        return userService.pay(payDto);
+    }
+
+
+    @PostMapping("/user_attribute")
+    public R<UserAttribute> addUserAttribute(HttpServletRequest request, @RequestBody UserAttribute userAttribute) {
+       return userService.addUserAttribute(request, userAttribute);
+    }
+
+    @PostMapping("/engineer_attribute")
+    public R<EngineerAttribute> addEngineerAttribute(HttpServletRequest request, @RequestBody EngineerAttribute engineerAttribute) {
+        return userService.addEngineerAttribute(request, engineerAttribute);
+    }
+
+    @PutMapping("/user_attribute")
+    public R<UserAttribute> updateUserAttribute(HttpServletRequest request, @RequestBody UserAttribute userAttribute) {
+        return userService.updateUserAttribute(request, userAttribute);
+    }
+
+    @PutMapping("/engineer_attribute")
+    public R<EngineerAttribute> updateEngineerAttribute(HttpServletRequest request, @RequestBody EngineerAttribute engineerAttribute) {
+        return userService.updateEngineerAttribute(request, engineerAttribute);
+    }
+
+    @GetMapping("/user_attribute")
+    public R<UserAttribute> getUserAttribute(HttpServletRequest request) {
+        User user = tokenService.getLoginUser(request).getUser();
+        LambdaQueryWrapper<UserAttribute> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserAttribute::getUserId, user.getId());
+        UserAttribute ret = userAttributeService.getOne(wrapper);
+        if (ret == null) {
+            return R.error("不存在用户信息");
+        }
+        return R.success(ret);
+    }
+
+    @GetMapping("/engineer_attribute")
+    public R<EngineerAttribute> getEngineerAttribute(HttpServletRequest request) {
+        User user = tokenService.getLoginUser(request).getUser();
+        LambdaQueryWrapper<EngineerAttribute> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(EngineerAttribute::getUserId, user.getId());
+        EngineerAttribute ret = engineerAttributeService.getOne(wrapper);
+        if (ret == null) {
+            return R.error("不存在用户信息");
+        }
+        return R.success(ret);
     }
 
     @SneakyThrows

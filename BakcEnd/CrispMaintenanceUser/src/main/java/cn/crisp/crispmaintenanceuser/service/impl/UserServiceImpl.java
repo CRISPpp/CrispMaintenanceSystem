@@ -2,17 +2,20 @@ package cn.crisp.crispmaintenanceuser.service.impl;
 
 import cn.crisp.common.Constants;
 import cn.crisp.common.R;
+import cn.crisp.crispmaintenanceuser.entity.ESMap;
 import cn.crisp.crispmaintenanceuser.entity.LoginUser;
 import cn.crisp.crispmaintenanceuser.es.ESService;
 import cn.crisp.crispmaintenanceuser.mapper.UserMapper;
 import cn.crisp.crispmaintenanceuser.security.service.TokenService;
+import cn.crisp.crispmaintenanceuser.service.EngineerAttributeService;
+import cn.crisp.crispmaintenanceuser.service.UserAttributeService;
 import cn.crisp.crispmaintenanceuser.service.UserService;
 import cn.crisp.crispmaintenanceuser.utils.RedisCache;
-import cn.crisp.dto.LoginDto;
-import cn.crisp.dto.MailUpdateDto;
-import cn.crisp.dto.PasswordUpdateDto;
+import cn.crisp.dto.*;
 import cn.crisp.entity.Address;
+import cn.crisp.entity.EngineerAttribute;
 import cn.crisp.entity.User;
+import cn.crisp.entity.UserAttribute;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.redisson.api.RLock;
@@ -24,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -33,22 +38,28 @@ import java.util.regex.Pattern;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService{
     @Autowired
-    RedisCache redisCache;
+    private RedisCache redisCache;
 
     @Autowired
-    ESService esService;
+    private ESService esService;
 
     @Autowired
-    UserMapper userMapper;
+    private UserMapper userMapper;
 
     @Autowired
-    BCryptPasswordEncoder encoder;
+    private BCryptPasswordEncoder encoder;
 
     @Autowired
-    TokenService tokenService;
+    private TokenService tokenService;
 
     @Autowired
-    RedissonClient redissonClient;
+    private RedissonClient redissonClient;
+
+    @Autowired
+    private UserAttributeService userAttributeService;
+
+    @Autowired
+    private EngineerAttributeService engineerAttributeService;
 
     private void crispCopyUser(User source, User target) {
         if (target.getIcon() != null) {
@@ -103,28 +114,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public R<String> register(LoginDto loginDto) {
-        if (loginDto.getPhone() == null || loginDto.getPhone().length() == 0 || loginDto.getPassword().length() == 0 || loginDto.getPassword() == null){
+    public R<String> register(RegisterDto registerDto) {
+        if (registerDto.getPhone() == null || registerDto.getPhone().length() == 0 || registerDto.getPassword().length() == 0 || registerDto.getPassword() == null){
             return R.error("参数错误");
         }
 
-        if (!isMobile(loginDto.getPhone())) {
+        if (!isMobile(registerDto.getPhone())) {
             return R.error("手机号格式错误");
         }
         //将数据库的修改和es的转为原子操作
-        RLock lock = redissonClient.getLock(Constants.USER_LOCK_NAME + loginDto.getPhone());
+        RLock lock = redissonClient.getLock(Constants.USER_LOCK_NAME + registerDto.getPhone());
         //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
         lock.lock();
         try {
             LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(User::getPhone, loginDto.getPhone());
+            wrapper.eq(User::getPhone, registerDto.getPhone());
             if (userMapper.selectOne(wrapper) != null) return R.error("手机号已被注册");
             User user = new User();
             user.setId(null);
-            user.setPhone(loginDto.getPhone());
-            user.setPassword(encoder.encode(loginDto.getPassword()));
-            user.setUsername(loginDto.getPhone());
-
+            user.setPhone(registerDto.getPhone());
+            user.setPassword(encoder.encode(registerDto.getPassword()));
+            user.setUsername(registerDto.getPhone());
+            if (registerDto.getRole() != null && (registerDto.getRole().equals(1) || registerDto.getRole().equals(2))) {
+                user.setRole(registerDto.getRole());
+            }
 
             this.save(user);
             //这里获取id存入到es中
@@ -258,6 +271,184 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         user.setPassword(encoder.encode(passwordUpdateDto.getNewPassword()));
         return this.updateOne(request, user);
+    }
+
+    @Override
+    public R<Boolean> pay(PayDto payDto) {
+        ESMap<Long> userMap= new ESMap<>("userId", payDto.getUserId());
+        List<ESMap> list = new ArrayList<>();
+        list.add(userMap);
+        ESMap<Long> engineerMap = new ESMap<>("userId", payDto.getEngineerId());
+        List<ESMap> list1 = new ArrayList<>();
+        list1.add(engineerMap);
+
+        List<UserAttribute> userAttributeList = esService.docGet(Constants.USER_ATTRIBUTE_ES_INDEX_NAME, UserAttribute.class, list);
+        List<EngineerAttribute> engineerAttributeList = esService.docGet(Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME, EngineerAttribute.class, list1);
+
+        if (userAttributeList == null || userAttributeList.size() != 1) return R.error("用户属性错误");
+        if (engineerAttributeList == null || engineerAttributeList.size() != 1) return R.error("工程师属性错误");
+
+        UserAttribute userAttribute = userAttributeList.get(0);
+        EngineerAttribute engineerAttribute = engineerAttributeList.get(0);
+
+        if (userAttribute.getBalance().compareTo(payDto.getMoney()) < 0) {
+            return R.error("用户余额不足");
+        }
+
+        userAttribute.setBalance(userAttribute.getBalance().subtract(payDto.getMoney()));
+        engineerAttribute.setBalance(engineerAttribute.getBalance().add(payDto.getMoney().multiply(new BigDecimal("0.7")).multiply(engineerAttribute.getQuality()).divide(new BigDecimal("5.0"), 2, BigDecimal.ROUND_HALF_UP)));
+        userAttribute.setUpdateTime(null);
+        engineerAttribute.setUpdateTime(null);
+
+        //将数据库的修改和es的转为原子操作
+        RLock lock = redissonClient.getLock(Constants.USER_ATTRIBUTE_LOCK_NAME + userAttribute.getId().toString());
+        //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
+        lock.lock();
+        RLock lock1 = redissonClient.getLock(Constants.ENGINEER_ATTRIBUTE_LOCK_NAME + engineerAttribute.getId().toString());
+        lock1.lock();
+        Boolean ret = true;
+        try {
+           ret = userAttributeService.updateById(userAttribute);
+           esService.docInsert(userAttribute, userAttribute.getId().toString(), Constants.USER_ATTRIBUTE_ES_INDEX_NAME);
+           ret &= engineerAttributeService.updateById(engineerAttribute);
+           esService.docInsert(engineerAttribute, engineerAttribute.getId().toString(), Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
+            lock1.unlock();
+        }
+
+        return R.success(ret);
+    }
+
+    @Override
+    public R<UserAttribute> addUserAttribute(HttpServletRequest request, UserAttribute userAttribute) {
+        User user = tokenService.getLoginUser(request).getUser();
+        if (user.getRole() != 1) {
+            return R.error("操作者为工程师");
+        }
+        userAttribute.setUserId(user.getId());
+        //将数据库的修改和es的转为原子操作
+        RLock lock = redissonClient.getLock(Constants.USER_ATTRIBUTE_LOCK_NAME + user.getId().toString());
+        //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
+        lock.lock();
+        UserAttribute ret = null;
+        try {
+            LambdaQueryWrapper<UserAttribute> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(UserAttribute::getUserId, user.getId());
+
+            if (userAttributeService.getOne(wrapper) != null) return R.error("用户属性已存在");
+
+            userAttributeService.save(userAttribute);
+
+            ret = userAttributeService.getOne(wrapper);
+
+            esService.docInsert(ret, ret.getId().toString(), Constants.USER_ATTRIBUTE_ES_INDEX_NAME);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
+        }
+        return R.success(ret);
+    }
+
+    @Override
+    public R<EngineerAttribute> addEngineerAttribute(HttpServletRequest request, EngineerAttribute engineerAttribute) {
+        User user = tokenService.getLoginUser(request).getUser();
+        if (user.getRole() != 2) {
+            return R.error("操作者为普通用户");
+        }
+        engineerAttribute.setUserId(user.getId());
+        //将数据库的修改和es的转为原子操作
+        RLock lock = redissonClient.getLock(Constants.ENGINEER_ATTRIBUTE_LOCK_NAME + user.getId().toString());
+        //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
+        lock.lock();
+        EngineerAttribute ret = null;
+        try {
+            LambdaQueryWrapper<EngineerAttribute> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(EngineerAttribute::getUserId, user.getId());
+
+            if (engineerAttributeService.getOne(wrapper) != null) return R.error("用户属性已存在");
+
+            engineerAttributeService.save(engineerAttribute);
+
+            ret = engineerAttributeService.getOne(wrapper);
+
+            esService.docInsert(ret, ret.getId().toString(), Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
+        }
+        return R.success(ret);
+
+    }
+
+    @Override
+    public R<UserAttribute> updateUserAttribute(HttpServletRequest request, UserAttribute userAttribute) {
+        User user = tokenService.getLoginUser(request).getUser();
+        if (!userAttribute.getUserId().equals(user.getId())) return R.error("无法修改其他用户的信息");
+        //将数据库的修改和es的转为原子操作
+        RLock lock = redissonClient.getLock(Constants.USER_ATTRIBUTE_LOCK_NAME + userAttribute.getId().toString());
+        //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
+        lock.lock();
+        UserAttribute ret = null;
+        try {
+            ret = esService.docGet(userAttribute.getId().toString(),Constants.USER_ATTRIBUTE_ES_INDEX_NAME ,UserAttribute.class);
+            if (ret == null) {
+                return R.error("用户属性不存在");
+            }
+            ret.setBalance(userAttribute.getBalance());
+            ret.setUpdateTime(null);
+            userAttributeService.updateById(userAttribute);
+            ret = userAttributeService.getById(userAttribute.getId());
+
+            esService.docInsert(ret, ret.getId().toString(), Constants.USER_ATTRIBUTE_ES_INDEX_NAME);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
+        }
+        return R.success(ret);
+    }
+
+    @Override
+    public R<EngineerAttribute> updateEngineerAttribute(HttpServletRequest request, EngineerAttribute engineerAttribute) {
+        User user = tokenService.getLoginUser(request).getUser();
+        if (!engineerAttribute.getUserId().equals(user.getId())) return R.error("无法修改其他用户的信息");
+        //将数据库的修改和es的转为原子操作
+        RLock lock = redissonClient.getLock(Constants.ENGINEER_ATTRIBUTE_LOCK_NAME + engineerAttribute.getId().toString());
+        //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
+        lock.lock();
+        EngineerAttribute ret = null;
+        try {
+            ret = esService.docGet(engineerAttribute.getId().toString(),Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME ,EngineerAttribute.class);
+            if (ret == null) {
+                return R.error("用户属性不存在");
+            }
+            ret.setBalance(engineerAttribute.getBalance());
+            ret.setQuality(engineerAttribute.getQuality());
+            ret.setUpdateTime(null);
+            engineerAttributeService.updateById(engineerAttribute);
+            ret = engineerAttributeService.getById(engineerAttribute.getId());
+
+            esService.docInsert(ret, ret.getId().toString(), Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
+        }
+        return R.success(ret);
     }
 
 
