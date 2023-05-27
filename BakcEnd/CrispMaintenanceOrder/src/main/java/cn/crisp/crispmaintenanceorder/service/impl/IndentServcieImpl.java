@@ -12,6 +12,7 @@ import cn.crisp.crispmaintenanceorder.security.service.TokenService;
 import cn.crisp.crispmaintenanceorder.service.IndentImageService;
 import cn.crisp.crispmaintenanceorder.utils.GeoCache;
 import cn.crisp.crispmaintenanceorder.vo.PagingVo;
+import cn.crisp.dto.PayDto;
 import cn.crisp.entity.Address;
 import cn.crisp.entity.Indent;
 import cn.crisp.crispmaintenanceorder.service.IndentService;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +74,13 @@ public class IndentServcieImpl
         if (indent != null) {
             try {
                 for (Field field : Indent.class.getDeclaredFields()) {
+                    //排除静态属性
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        continue;
+                    }
                     Object v = null;
+                    //反射爆破
+                    field.setAccessible(true);
                     if ((v = field.get(indent)) != null) {
                         list.add(new ESMap(field.getName(), v));
                     }
@@ -108,7 +116,7 @@ public class IndentServcieImpl
         return esService.docGetPage(
                 Constants.INDENT_ES_INDEX_NAME,
                 Indent.class,
-                getESMap(queryDto.getConditon()),
+                getESMap(queryDto.getCondition()),
                 queryDto.getSkip(),
                 queryDto.getSize()
         );
@@ -146,7 +154,11 @@ public class IndentServcieImpl
      */
     @Override
     public Indent getById(Long id) {
-        return esService.docGet(id.toString(), Constants.INDENT_ES_INDEX_NAME, Indent.class);
+        try {
+            return esService.docGet(id.toString(), Constants.INDENT_ES_INDEX_NAME, Indent.class);
+        } catch (Exception e) {
+            throw new BusinessException(0, "订单不存在");
+        }
     }
 
     /**
@@ -206,7 +218,7 @@ public class IndentServcieImpl
         esService.docInsert(order, order.getId().toString(), Constants.INDENT_ES_INDEX_NAME);
 
         //加入 GEO
-        geoCache.add(order.getLongitude(), order.getLatitude(), order.getId());
+        geoCache.add(order.getLongitude().doubleValue(), order.getLatitude().doubleValue(), order.getId());
 
         return indent;
     }
@@ -228,7 +240,7 @@ public class IndentServcieImpl
         LambdaQueryWrapper<Indent> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Indent::getStatus, Indent.Status.PROCESSING)
                 .eq(Indent::getEngineerId, user.getId());
-        if (indentMapper.selectCount(wrapper) > 3) {
+        if (indentMapper.selectCount(wrapper) >= 3) {
             throw new BusinessException(0, "最多只能同时接3个订单");
         }
 
@@ -318,6 +330,65 @@ public class IndentServcieImpl
     }
 
     /**
+     * 用户支付订单
+     * @param request
+     * @param indentId
+     * @return
+     */
+    @Override
+    public boolean pay(HttpServletRequest request, Long indentId) {
+        User user = tokenService.getLoginUser(request).getUser();
+        if (!user.getRole().equals(User.Role.COMMON_USER)) {
+            throw new BusinessException(0, "非普通用户无法支付订单");
+        }
+
+        Indent indent = indentMapper.selectById(indentId);
+        if (indent == null) {
+            throw new BusinessException(0, "订单不存在");
+        }
+        if (!indent.getStatus().equals(Indent.Status.UNPAID)) {
+            throw new BusinessException(0, "该订单不处于待支付状态");
+        }
+        if (!user.getId().equals(indent.getUserId())) {
+            throw new BusinessException(0, "禁止操作他人的订单");
+        }
+
+        RLock lock = redissonClient.getLock(Constants.INDENT_LOCK_NAME + indentId);
+        //先修改订单状态，再调用用户模块的 pay 接口，一旦支付失败才可以回滚
+        try {
+            lock.lock();
+
+            //更新数据库
+            indent.setStatus(Indent.Status.UNEVALUATED);
+            if (indentMapper.updateById(indent) <= 0) {
+                throw new BusinessException(0, "支付失败");
+            }
+            //更新 es
+            esService.docInsert(indent, indentId.toString(), Constants.INDENT_ES_INDEX_NAME);
+
+            PayDto payDto = new PayDto();
+            payDto.setUserId(indent.getUserId());
+            payDto.setEngineerId(indent.getEngineerId());
+            payDto.setMoney(indent.getCost());
+            //如果调用失败或者支付失败，回滚 es
+            try {
+                R<Boolean> r = userClient.pay(payDto, request.getHeader("Authorization"));
+                if (r.getCode() != 1 || r.getData() == false) {
+                    throw new RuntimeException();
+                }
+            } catch (Exception e) {
+                indent.setStatus(Indent.Status.UNPAID);
+                esService.docInsert(indent, indentId.toString(), Constants.INDENT_ES_INDEX_NAME);
+                throw new BusinessException(0, "支付失败");
+            }
+
+        } finally {
+            lock.unlock();
+        }
+        return true;
+    }
+
+    /**
      * 评价
      * @param request
      * @param evaluateDto
@@ -357,6 +428,7 @@ public class IndentServcieImpl
                     .eq("engineer_id", indent.getEngineerId());
             Double qualityAvg = (Double) indentMapper.selectMaps(wrapper).get(0).get("quality_avg");
             //TODO 调用 user 模块，更新维修工程师的 quality
+
 
             //更新 es
             esService.docInsert(indent, indent.getId().toString(), Constants.INDENT_ES_INDEX_NAME);

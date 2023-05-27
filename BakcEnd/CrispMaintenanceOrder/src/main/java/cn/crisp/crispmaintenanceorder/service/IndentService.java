@@ -62,10 +62,19 @@ public interface IndentService extends IService<Indent> {
     boolean repair(HttpServletRequest request, RepairDto repairDto);
 
     /**
+     * 用户支付订单
+     * @param request
+     * @param indentId
+     * @return
+     */
+    boolean pay(HttpServletRequest request, Long indentId);
+
+    /**
      * 评价
      * @param request
      * @param evaluateDto
      * @return
      */
     boolean evaluate(HttpServletRequest request, EvaluateDto evaluateDto);
+
 }

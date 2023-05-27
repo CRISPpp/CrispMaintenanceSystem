@@ -6,6 +6,7 @@ import cn.crisp.crispmaintenanceorder.security.service.TokenService;
 import cn.crisp.crispmaintenanceorder.service.IndentService;
 import cn.crisp.crispmaintenanceorder.utils.ParamUtils;
 import cn.crisp.crispmaintenanceorder.utils.RedisCache;
+import cn.crisp.dto.PayDto;
 import cn.crisp.entity.Indent;
 import cn.crisp.entity.User;
 import cn.crisp.exception.BusinessException;
@@ -46,7 +47,7 @@ public class IndentController {
         }
         //不分页
         else {
-            return R.success(indentService.list(queryDto.getConditon()));
+            return R.success(indentService.list(queryDto.getCondition()));
         }
     }
 
@@ -157,6 +158,17 @@ public class IndentController {
             throw new BusinessException(0, "维修成功的图片至少 1 张，最多 3 张");
         }
         return R.success(indentService.repair(request, repairDto));
+    }
+
+    /**
+     * 支付
+     * @param payDto
+     * @param request
+     * @return
+     */
+    @PutMapping("/pay")
+    public R pay(@RequestParam("indentId") Long indentId, HttpServletRequest request) {
+        return R.success(indentService.pay(request, indentId));
     }
 
     /**

@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 public class Indent implements Serializable {
     private static final long serialVersionUID = 442353225233L;
 
-
     @TableId(value = "id")
     private Long id;
 
@@ -39,9 +38,9 @@ public class Indent implements Serializable {
 
     private String addressDetail;
 
-    private Double latitude;
+    private BigDecimal latitude;
 
-    private Double longitude;
+    private BigDecimal longitude;
 
     private String problem;
 

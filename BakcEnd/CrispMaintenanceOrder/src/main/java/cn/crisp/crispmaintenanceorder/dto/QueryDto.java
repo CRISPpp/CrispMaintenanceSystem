@@ -23,7 +23,7 @@ public class QueryDto<T> {
     /**
      * 筛选条件
      */
-    private T conditon;
+    private T condition;
 
     /**
      * 需要跳过的个数
