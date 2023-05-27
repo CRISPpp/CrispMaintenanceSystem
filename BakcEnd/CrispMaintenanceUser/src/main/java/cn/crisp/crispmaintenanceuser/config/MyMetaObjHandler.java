@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Component
@@ -22,5 +23,8 @@ public class MyMetaObjHandler implements MetaObjectHandler {
     @Override
     public void updateFill(MetaObject metaObject) {
         this.strictUpdateFill(metaObject,"updateTime", LocalDateTime.class, LocalDateTime.now());
+        this.strictUpdateFill(metaObject, "balance", BigDecimal.class, new BigDecimal("0.0"));
+        this.strictUpdateFill(metaObject, "quality", BigDecimal.class, new BigDecimal("5.0"));
+
     }
 }

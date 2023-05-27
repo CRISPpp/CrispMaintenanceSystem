@@ -154,7 +154,12 @@ public class UserController {
         return userService.pay(payDto);
     }
 
-
+    /**
+     * 添加用户属性
+     * @param request
+     * @param userAttribute
+     * @return
+     */
     @PostMapping("/user_attribute")
     public R<UserAttribute> addUserAttribute(HttpServletRequest request, @RequestBody UserAttribute userAttribute) {
        return userService.addUserAttribute(request, userAttribute);
@@ -165,6 +170,12 @@ public class UserController {
         return userService.addEngineerAttribute(request, engineerAttribute);
     }
 
+    /**
+     * 修改用户属性
+     * @param request
+     * @param userAttribute
+     * @return
+     */
     @PutMapping("/user_attribute")
     public R<UserAttribute> updateUserAttribute(HttpServletRequest request, @RequestBody UserAttribute userAttribute) {
         return userService.updateUserAttribute(request, userAttribute);
@@ -175,6 +186,11 @@ public class UserController {
         return userService.updateEngineerAttribute(request, engineerAttribute);
     }
 
+    /**
+     * 获取用户属性
+     * @param request
+     * @return
+     */
     @GetMapping("/user_attribute")
     public R<UserAttribute> getUserAttribute(HttpServletRequest request) {
         User user = tokenService.getLoginUser(request).getUser();

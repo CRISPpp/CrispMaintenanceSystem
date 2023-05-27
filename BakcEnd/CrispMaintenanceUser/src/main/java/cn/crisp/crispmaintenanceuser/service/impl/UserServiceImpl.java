@@ -127,9 +127,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
         lock.lock();
         try {
-            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(User::getPhone, registerDto.getPhone());
-            if (userMapper.selectOne(wrapper) != null) return R.error("手机号已被注册");
+            LambdaQueryWrapper<User> wrapper1 = new LambdaQueryWrapper<>();
+            wrapper1.eq(User::getPhone, registerDto.getPhone());
+            if (userMapper.selectOne(wrapper1) != null) return R.error("手机号已被注册");
             User user = new User();
             user.setId(null);
             user.setPhone(registerDto.getPhone());
@@ -141,8 +141,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
             this.save(user);
             //这里获取id存入到es中
-            user = this.getOne(wrapper);
+            user = this.getOne(wrapper1);
             esService.docInsert(user, user.getId().toString(), Constants.USER_ES_INDEX_NAME);
+
+            if (user.getRole() == 1) {
+                UserAttribute userAttribute = new UserAttribute();
+                userAttribute.setUserId(user.getId());
+                userAttribute.setBalance(new BigDecimal("0.0"));
+                UserAttribute ret = null;
+                LambdaQueryWrapper<UserAttribute> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(UserAttribute::getUserId, user.getId());
+
+                if (userAttributeService.getOne(wrapper) != null) return R.error("用户属性已存在");
+
+                userAttributeService.save(userAttribute);
+
+                ret = userAttributeService.getOne(wrapper);
+
+                esService.docInsert(ret, ret.getId().toString(), Constants.USER_ATTRIBUTE_ES_INDEX_NAME);
+
+            } else {
+                EngineerAttribute engineerAttribute = new EngineerAttribute();
+                engineerAttribute.setUserId(user.getId());
+                engineerAttribute.setBalance(new BigDecimal("0.0"));
+                engineerAttribute.setQuality(new BigDecimal("5.0"));
+                EngineerAttribute ret = null;
+
+                LambdaQueryWrapper<EngineerAttribute> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(EngineerAttribute::getUserId, user.getId());
+
+                if (engineerAttributeService.getOne(wrapper) != null) return R.error("用户属性已存在");
+
+                engineerAttributeService.save(engineerAttribute);
+
+                ret = engineerAttributeService.getOne(wrapper);
+
+                esService.docInsert(ret, ret.getId().toString(), Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,7 +185,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         } finally {
             lock.unlock();
         }
-        return R.success("添加成功");
+        return R.success("注册成功");
     }
 
     @Override
@@ -393,21 +428,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public R<UserAttribute> updateUserAttribute(HttpServletRequest request, UserAttribute userAttribute) {
         User user = tokenService.getLoginUser(request).getUser();
-        if (!userAttribute.getUserId().equals(user.getId())) return R.error("无法修改其他用户的信息");
         //将数据库的修改和es的转为原子操作
-        RLock lock = redissonClient.getLock(Constants.USER_ATTRIBUTE_LOCK_NAME + userAttribute.getId().toString());
+        RLock lock = redissonClient.getLock(Constants.USER_ATTRIBUTE_LOCK_NAME + userAttribute.getUserId().toString());
         //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
         lock.lock();
         UserAttribute ret = null;
         try {
-            ret = esService.docGet(userAttribute.getId().toString(),Constants.USER_ATTRIBUTE_ES_INDEX_NAME ,UserAttribute.class);
-            if (ret == null) {
+            ESMap<Long> esMap = new ESMap<>("userId", userAttribute.getUserId());
+            List<ESMap> esMapList = new ArrayList<>();
+            esMapList.add(esMap);
+            List<UserAttribute> list = esService.docGet(Constants.USER_ATTRIBUTE_ES_INDEX_NAME, UserAttribute.class, esMapList);
+            if (list == null || list.size() == 0) {
                 return R.error("用户属性不存在");
             }
+            ret = list.get(0);
             ret.setBalance(userAttribute.getBalance());
             ret.setUpdateTime(null);
-            userAttributeService.updateById(userAttribute);
-            ret = userAttributeService.getById(userAttribute.getId());
+            userAttributeService.updateById(ret);
+            ret = userAttributeService.getById(ret);
 
             esService.docInsert(ret, ret.getId().toString(), Constants.USER_ATTRIBUTE_ES_INDEX_NAME);
 
@@ -423,22 +461,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public R<EngineerAttribute> updateEngineerAttribute(HttpServletRequest request, EngineerAttribute engineerAttribute) {
         User user = tokenService.getLoginUser(request).getUser();
-        if (!engineerAttribute.getUserId().equals(user.getId())) return R.error("无法修改其他用户的信息");
         //将数据库的修改和es的转为原子操作
-        RLock lock = redissonClient.getLock(Constants.ENGINEER_ATTRIBUTE_LOCK_NAME + engineerAttribute.getId().toString());
+        RLock lock = redissonClient.getLock(Constants.ENGINEER_ATTRIBUTE_LOCK_NAME + engineerAttribute.getUserId().toString());
         //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
         lock.lock();
         EngineerAttribute ret = null;
         try {
-            ret = esService.docGet(engineerAttribute.getId().toString(),Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME ,EngineerAttribute.class);
-            if (ret == null) {
+            ESMap<Long> esMap = new ESMap<>("userId", engineerAttribute.getUserId());
+            List<ESMap> esMapList = new ArrayList<>();
+            esMapList.add(esMap);
+            List<EngineerAttribute> list = esService.docGet(Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME, EngineerAttribute.class, esMapList);
+            if (list == null || list.size() == 0) {
                 return R.error("用户属性不存在");
             }
+            ret = list.get(0);
             ret.setBalance(engineerAttribute.getBalance());
             ret.setQuality(engineerAttribute.getQuality());
             ret.setUpdateTime(null);
-            engineerAttributeService.updateById(engineerAttribute);
-            ret = engineerAttributeService.getById(engineerAttribute.getId());
+            engineerAttributeService.updateById(ret);
+            ret = engineerAttributeService.getById(ret);
 
             esService.docInsert(ret, ret.getId().toString(), Constants.ENGINEER_ATTRIBUTE_ES_INDEX_NAME);
 

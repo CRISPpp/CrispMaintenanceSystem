@@ -29,6 +29,7 @@ public class UserAttribute implements Serializable {
 
     private Long userId;
 
+    @TableField(fill = FieldFill.INSERT)
     private BigDecimal balance;
 
     @TableField(fill = FieldFill.INSERT)
