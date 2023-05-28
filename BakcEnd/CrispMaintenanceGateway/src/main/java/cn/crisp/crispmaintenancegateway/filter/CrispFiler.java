@@ -29,7 +29,7 @@ public class CrispFiler implements GlobalFilter, Ordered {
 
     private Mono<Void> handler(ServerHttpResponse response) {
         JSONObject ret = new JSONObject();
-        ret.put("code", "1");
+        ret.put("code", "401");
         ret.put("msg", "没有权限，请登录");
         byte[] bits = ret.toString().getBytes(StandardCharsets.UTF_8);
         DataBuffer buffer = (DataBuffer) response.bufferFactory().wrap(bits);

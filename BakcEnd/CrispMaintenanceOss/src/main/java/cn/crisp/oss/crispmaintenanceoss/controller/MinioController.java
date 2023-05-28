@@ -109,7 +109,7 @@ public class MinioController {
             return R.error("邮箱格式错误");
         }
         String code = ValidateCodeUtils.generateValidateCode(4).toString();
-        redisCache.setCacheObject(Constants.VALIDATE_MAIL_KEY + mailDto.getMail(), code, 60, TimeUnit.SECONDS);
+        redisCache.setCacheObject(Constants.VALIDATE_MAIL_KEY + mailDto.getMail(), code, 5, TimeUnit.MINUTES);
         try {
             mailService.sendMail(mailDto.getMail(), "CrispMaintenanceSystem", code);
         }catch (Exception e) {

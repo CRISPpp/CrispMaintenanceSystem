@@ -4,6 +4,7 @@ package cn.crisp.crispmaintenanceorder.config;
 import cn.crisp.common.CODE;
 import cn.crisp.common.R;
 import cn.crisp.exception.BusinessException;
+import cn.crisp.exception.NotLoginException;
 import cn.crisp.exception.SystemException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,6 +32,16 @@ public class ProjectExceptionHandler {
 
 
         return R.errorWithCode(exception.getCode(), exception.getMessage());
+    }
+
+    @ExceptionHandler(NotLoginException.class)
+    public R<String> doNotLoginException(NotLoginException exception){
+        //记录日志
+        log.info("NotLoginException");
+        R r = new R();
+        r.setCode(401);
+        r.setMsg("没有权限，请登录");
+        return r;
     }
 
     @ExceptionHandler(Exception.class)

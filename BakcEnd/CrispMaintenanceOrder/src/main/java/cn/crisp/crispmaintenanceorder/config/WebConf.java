@@ -2,11 +2,14 @@ package cn.crisp.crispmaintenanceorder.config;
 
 
 import cn.crisp.common.JacksonObjectMapper;
+import cn.crisp.crispmaintenanceorder.handler.TokenInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
@@ -14,6 +17,9 @@ import java.util.List;
 
 @Configuration
 public class WebConf extends WebMvcConfigurationSupport {
+    @Autowired
+    private TokenInterceptor tokenInterceptor;
+
     /**
      * 设置静态资源映射
      */
@@ -38,6 +44,11 @@ public class WebConf extends WebMvcConfigurationSupport {
         converters.add(0, messageConverter);
     }
 
+    @Override
+    protected void addInterceptors(InterceptorRegistry registry) {
+        //检验是否登录，如果没有登录，拦截请求
+        registry.addInterceptor(tokenInterceptor).addPathPatterns("/**");
+    }
 
     /**
      * 密码明文加密方式配置

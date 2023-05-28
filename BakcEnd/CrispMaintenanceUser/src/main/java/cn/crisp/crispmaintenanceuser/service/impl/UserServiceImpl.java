@@ -301,9 +301,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = tokenService.getLoginUser(request).getUser();
         if (user == null) return R.error("登录信息错误");
         if (!(user.getId().equals(passwordUpdateDto.getId()))) return R.error("无法修改其他用户");
-        if (!user.getPassword().equals(encoder.encode(passwordUpdateDto.getOldPassword()))) {
+        // BCryptPasswordEncoder 是单向加密，需要用 match 判断而不是 equals
+        if (!encoder.matches(passwordUpdateDto.getOldPassword(), user.getPassword())) {
             return R.error("原密码错误");
         }
+//        if (!user.getPassword().equals(encoder.encode(passwordUpdateDto.getOldPassword()))) {
+//            return R.error("原密码错误");
+//        }
         user.setPassword(encoder.encode(passwordUpdateDto.getNewPassword()));
         return this.updateOne(request, user);
     }
