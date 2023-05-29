@@ -108,6 +108,7 @@ public class AddressServiceImpl
         Address address = esService.docGet(id.toString(), Constants.ADDRESS_ES_INDEX_NAME, Address.class);
         if (address == null) return R.error("该地址不存在");
         if (!user.getId().equals(address.getUserId())) return R.error("无法删除其他用户的地址");
+        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         //将数据库的修改和es的转为原子操作
         RLock lock = redissonClient.getLock(Constants.ADDRESS_LOCK_NAME + user.getId());
@@ -124,7 +125,6 @@ public class AddressServiceImpl
         } finally {
             lock.unlock();
         }
-        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         return R.success("删除成功");
     }
@@ -135,6 +135,7 @@ public class AddressServiceImpl
         Address address = esService.docGet(id.toString(), Constants.ADDRESS_ES_INDEX_NAME, Address.class);
         if (address == null) return R.error("该地址不存在");
         if (!user.getId().equals(address.getUserId())) return R.error("无法使用其他用户的地址");
+        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         //将数据库的修改和es的转为原子操作
         RLock lock = redissonClient.getLock(Constants.ADDRESS_LOCK_NAME + user.getId());
@@ -165,8 +166,34 @@ public class AddressServiceImpl
         } finally {
             lock.unlock();
         }
-        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         return R.success("修改成功");
+    }
+
+    @Override
+    public R<Address> updateOne(HttpServletRequest request, Address address) {
+        User user = tokenService.getLoginUser(request).getUser();
+        if (address == null) return R.error("该地址不存在");
+        if (address.getIsDefault() != null) return R.error("不允许修改默认地址");
+        if (!user.getId().equals(address.getUserId())) return R.error("无法使用其他用户的地址");
+        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
+
+        //将数据库的修改和es的转为原子操作
+        RLock lock = redissonClient.getLock(Constants.ADDRESS_LOCK_NAME + user.getId());
+        //阻塞式等待，默认为30s过期时间，业务过长会自动续期，加锁业务执行完（通过线程判断）不会自动续期，30s后过期
+        lock.lock();
+        try {
+            Boolean ret = this.updateById(address);
+            if (!ret) return R.error("更新失败");
+            address = this.getById(address.getId());
+            esService.docInsert(address, address.getId().toString(), Constants.ADDRESS_ES_INDEX_NAME);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
+        }
+
+        return R.success(address);
     }
 }

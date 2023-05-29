@@ -149,6 +149,11 @@ public class UserController {
         return addressService.updateDefault(request, id);
     }
 
+    @PutMapping("/address")
+    public R<Address> updateOne(HttpServletRequest request, @RequestBody Address address) {
+        return addressService.updateOne(request, address);
+    }
+
     @PostMapping("/pay")
     public R<Boolean> pay(@RequestBody PayDto payDto) {
         return userService.pay(payDto);

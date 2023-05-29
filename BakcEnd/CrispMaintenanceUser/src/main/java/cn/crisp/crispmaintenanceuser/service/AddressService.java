@@ -13,4 +13,5 @@ public interface AddressService extends IService<Address> {
     R<String> addAddress(HttpServletRequest request, Address address);
     R<String> delAddress(HttpServletRequest request, Long id);
     R<String> updateDefault(HttpServletRequest request, Long id);
+    R<Address> updateOne(HttpServletRequest request, Address address);
 }
