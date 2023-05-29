@@ -35,6 +35,8 @@ class CrispMaintenanceOrderApplicationTests {
         geoCache.add(35, 40, 1661647370679967746l);
         geoCache.add(5, 10, 1661647791465127937l);
         geoCache.add(135, 20, 1661647981597122561l);
+
+        StringBuilder builder = null;
     }
 
 }

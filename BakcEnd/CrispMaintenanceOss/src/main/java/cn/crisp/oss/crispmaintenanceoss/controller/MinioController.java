@@ -15,10 +15,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -53,7 +50,7 @@ public class MinioController {
      */
     @SneakyThrows
     @PostMapping("/upload")
-    public R<String> uploadFile(HttpServletRequest request, @RequestBody MultipartFile file){
+    public R<String> uploadFile(HttpServletRequest request, @RequestParam("file") MultipartFile file){
         if (tokenService.getLoginUser(request) == null) return R.error("检查登录信息");
 
         if(file == null){
