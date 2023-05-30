@@ -19,6 +19,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 
 import org.elasticsearch.client.RequestOptions;
@@ -122,7 +123,7 @@ public class ESService {
     @SneakyThrows
     public <T> String docInsert(T obj, String id, String indexName) {
         IndexRequest request = new IndexRequest();
-        request.index(indexName).id(id);
+        request.index(indexName).id(id).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
         ObjectMapper mapper = new ObjectMapper();
         String objJson = mapper.writeValueAsString(obj);
@@ -152,6 +153,7 @@ public class ESService {
         for (int i = 0; i < list.size(); i ++) {
             IndexRequest indexRequest = new IndexRequest();
             indexRequest.index(indexName).id(id.get(i));
+            indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
             ObjectMapper mapper = new ObjectMapper();
             String objJson = mapper.writeValueAsString(list.get(i));
             indexRequest.source(objJson, XContentType.JSON);
@@ -305,7 +307,7 @@ public class ESService {
     public String docDelete(String id, String indexName) {
         DeleteRequest request = new DeleteRequest();
         request.index(indexName).id(id);
-
+        request.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         DeleteResponse response = client.delete(request, RequestOptions.DEFAULT);
 
         DocWriteResponse.Result result = response.getResult();
@@ -319,6 +321,7 @@ public class ESService {
         id.stream().forEach(s -> {
             DeleteRequest deleteRequest = new DeleteRequest();
             deleteRequest.index(indexName).id(s);
+            deleteRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
             request.add(deleteRequest);
         });
 

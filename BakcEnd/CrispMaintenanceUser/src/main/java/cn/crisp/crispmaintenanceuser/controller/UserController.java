@@ -220,6 +220,18 @@ public class UserController {
         return R.success(ret);
     }
 
+
+    @GetMapping("/engineer_attribute/{id}")
+    public R<EngineerAttribute> getEngineerAttribute(HttpServletRequest request, @PathVariable Long id) {
+        LambdaQueryWrapper<EngineerAttribute> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(EngineerAttribute::getUserId, id);
+        EngineerAttribute ret = engineerAttributeService.getOne(wrapper);
+        if (ret == null) {
+            return R.error("不存在用户信息");
+        }
+        return R.success(ret);
+    }
+
     @SneakyThrows
     @GetMapping("/test")
     public R<List<User>> test() {

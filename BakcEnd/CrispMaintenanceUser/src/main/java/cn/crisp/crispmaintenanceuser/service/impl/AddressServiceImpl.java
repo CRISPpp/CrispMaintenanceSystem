@@ -51,12 +51,15 @@ public class AddressServiceImpl
         if (user == null) return R.error("登录信息错误");
 
         List<Address> ret = null;
-
+//        LambdaQueryWrapper<Address> wrapper = new LambdaQueryWrapper<>();
+//        wrapper.eq(Address::getUserId, user.getId());
+//        ret = addressMapper.selectList(wrapper);
         ESMap<Long> esMap = new ESMap("userId", user.getId());
         List<ESMap> list = new ArrayList<>();
         list.add(esMap);
 
         ret = esService.docGet(Constants.ADDRESS_ES_INDEX_NAME, Address.class, list);
+
 
         return R.success(ret);
     }
@@ -86,9 +89,12 @@ public class AddressServiceImpl
 
             List<Address> addresses = this.list(wrapper);
 
+            List<String> rets = new ArrayList<>();
+
             addresses.stream().forEach(address1 -> {
-                esService.docInsert(address1, address1.getId().toString(), Constants.ADDRESS_ES_INDEX_NAME);
+                rets.add(esService.docInsert(address1, address1.getId().toString(), Constants.ADDRESS_ES_INDEX_NAME));
             });
+
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -141,9 +147,10 @@ public class AddressServiceImpl
             wrapper.eq(Address::getUserId, user.getId());
             wrapper.eq(Address::getIsDefault, 1);
             Address addressOld = addressMapper.selectOne(wrapper);
+            List<String> rets = new ArrayList<>();
             if (addressOld != null) {
                 addressOld.setIsDefault(0);
-                esService.docInsert(addressOld, addressOld.getId().toString(), Constants.ADDRESS_ES_INDEX_NAME);
+                rets.add(esService.docInsert(addressOld, addressOld.getId().toString(), Constants.ADDRESS_ES_INDEX_NAME));
                 addressOld.setUpdateTime(null);
                 boolean ret = this.updateById(addressOld);
                 if (!ret) return R.error("更新失败");
