@@ -50,15 +50,13 @@ public class AddressServiceImpl
         User user = tokenService.getLoginUser(request).getUser();
         if (user == null) return R.error("登录信息错误");
 
-        List<Address> ret = redisCache.getCacheObject(Constants.ADDRESS_KEY + user.getId().toString());
-        if (ret != null) return R.success(ret);
+        List<Address> ret = null;
 
         ESMap<Long> esMap = new ESMap("userId", user.getId());
         List<ESMap> list = new ArrayList<>();
         list.add(esMap);
 
         ret = esService.docGet(Constants.ADDRESS_ES_INDEX_NAME, Address.class, list);
-        redisCache.setCacheObject(Constants.ADDRESS_KEY + user.getId().toString(), ret, 30, TimeUnit.MINUTES);
 
         return R.success(ret);
     }
@@ -74,7 +72,6 @@ public class AddressServiceImpl
             return R.error("地址数量不能超过10");
         }
 
-        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         //将数据库的修改和es的转为原子操作
         RLock lock = redissonClient.getLock(Constants.ADDRESS_LOCK_NAME + user.getId());
@@ -108,7 +105,6 @@ public class AddressServiceImpl
         Address address = esService.docGet(id.toString(), Constants.ADDRESS_ES_INDEX_NAME, Address.class);
         if (address == null) return R.error("该地址不存在");
         if (!user.getId().equals(address.getUserId())) return R.error("无法删除其他用户的地址");
-        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         //将数据库的修改和es的转为原子操作
         RLock lock = redissonClient.getLock(Constants.ADDRESS_LOCK_NAME + user.getId());
@@ -135,7 +131,6 @@ public class AddressServiceImpl
         Address address = esService.docGet(id.toString(), Constants.ADDRESS_ES_INDEX_NAME, Address.class);
         if (address == null) return R.error("该地址不存在");
         if (!user.getId().equals(address.getUserId())) return R.error("无法使用其他用户的地址");
-        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         //将数据库的修改和es的转为原子操作
         RLock lock = redissonClient.getLock(Constants.ADDRESS_LOCK_NAME + user.getId());
@@ -176,7 +171,6 @@ public class AddressServiceImpl
         if (address == null) return R.error("该地址不存在");
         if (address.getIsDefault() != null) return R.error("不允许修改默认地址");
         if (!user.getId().equals(address.getUserId())) return R.error("无法使用其他用户的地址");
-        redisCache.deleteObject(Constants.ADDRESS_KEY + user.getId().toString());
 
         //将数据库的修改和es的转为原子操作
         RLock lock = redissonClient.getLock(Constants.ADDRESS_LOCK_NAME + user.getId());
