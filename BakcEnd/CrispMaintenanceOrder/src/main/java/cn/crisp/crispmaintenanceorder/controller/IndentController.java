@@ -84,11 +84,11 @@ public class IndentController {
      * @return
      */
     @GetMapping("/{id}")
-    public R getById(@PathVariable("id") Long id) {
+    public R getById(@PathVariable("id") Long id, HttpServletRequest request) {
         if (id == null) {
             throw new BusinessException(0, "id不能为null");
         }
-        Indent indent = indentService.getById(id);
+        Indent indent = indentService.getById(id, request);
         if (indent == null) {
             throw new BusinessException(0, "订单不存在");
         }

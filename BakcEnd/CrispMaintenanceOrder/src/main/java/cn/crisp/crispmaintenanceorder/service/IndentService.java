@@ -36,7 +36,7 @@ public interface IndentService extends IService<Indent> {
      * @param id
      * @return
      */
-    Indent getById(Long id);
+    Indent getById(Long id, HttpServletRequest request);
 
     /**
      * 故障报修

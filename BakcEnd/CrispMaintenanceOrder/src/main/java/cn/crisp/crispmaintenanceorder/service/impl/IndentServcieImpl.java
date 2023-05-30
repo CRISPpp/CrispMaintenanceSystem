@@ -11,6 +11,7 @@ import cn.crisp.crispmaintenanceorder.mapper.IndentMapper;
 import cn.crisp.crispmaintenanceorder.security.service.TokenService;
 import cn.crisp.crispmaintenanceorder.service.IndentImageService;
 import cn.crisp.crispmaintenanceorder.utils.GeoCache;
+import cn.crisp.crispmaintenanceorder.vo.IndentVo;
 import cn.crisp.crispmaintenanceorder.vo.PagingVo;
 import cn.crisp.dto.PayDto;
 import cn.crisp.entity.Address;
@@ -153,9 +154,19 @@ public class IndentServcieImpl
      * @return
      */
     @Override
-    public Indent getById(Long id) {
+    public Indent getById(Long id, HttpServletRequest request) {
         try {
-            return esService.docGet(id.toString(), Constants.INDENT_ES_INDEX_NAME, Indent.class);
+            IndentVo indentVo = esService.docGet(
+                    id.toString(),
+                    Constants.INDENT_ES_INDEX_NAME,
+                    IndentVo.class
+            );
+            String authorization = request.getHeader("Authorization");
+            indentVo.setUser(userClient.getUserById(indentVo.getUserId(), authorization).getData());
+            indentVo.setEngineer(userClient.getUserById(indentVo.getEngineerId(), authorization).getData());
+            //获取订单图片
+            indentVo.setImages(indentImageService.getByIndentId(indentVo.getId()));
+            return indentVo;
         } catch (Exception e) {
             throw new BusinessException(0, "订单不存在");
         }
