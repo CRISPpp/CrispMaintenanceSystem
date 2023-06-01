@@ -51,7 +51,7 @@ public class MinioController {
     @SneakyThrows
     @PostMapping("/upload")
     public R<String> uploadFile(HttpServletRequest request, @RequestParam("file") MultipartFile file){
-        if (tokenService.getLoginUser(request) == null) return R.error("检查登录信息");
+        if (tokenService.getLoginUser(request) == null) return R.errorWithCode(401, "检查登录信息");
 
         if(file == null){
             return R.error("上传文件不能为空");

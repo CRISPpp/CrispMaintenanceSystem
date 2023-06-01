@@ -51,9 +51,6 @@ public class AddressServiceImpl
         if (user == null) return R.error("登录信息错误");
 
         List<Address> ret = null;
-//        LambdaQueryWrapper<Address> wrapper = new LambdaQueryWrapper<>();
-//        wrapper.eq(Address::getUserId, user.getId());
-//        ret = addressMapper.selectList(wrapper);
         ESMap<Long> esMap = new ESMap("userId", user.getId());
         List<ESMap> list = new ArrayList<>();
         list.add(esMap);
