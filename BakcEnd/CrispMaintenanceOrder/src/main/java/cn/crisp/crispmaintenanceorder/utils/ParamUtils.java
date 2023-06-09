@@ -53,7 +53,10 @@ public class ParamUtils {
         for (FieldFunction<T> function : functions) {
             if (StringUtils.isBlank(function.apply(item))) {
                 String field = function.getField();
-                throw new BusinessException(0, "必传字段" + (field == null ? "" : field) + "为null或空串");
+                throw new BusinessException(
+                        0,
+                        "必传字段" + (field == null ? "" : field) + "为null或空串"
+                );
             }
         }
     }

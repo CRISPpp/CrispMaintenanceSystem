@@ -25,4 +25,10 @@ public interface UserClient {
 
     @PostMapping("/user/pay")
     R<Boolean> pay(@RequestBody PayDto payDto, @RequestHeader("Authorization") String token);
+
+    @PutMapping("/user/engineer_attribute")
+    R<EngineerAttribute> updateEngineerAttribute(
+            @RequestBody EngineerAttribute attribute,
+            @RequestHeader("Authorization") String token
+    );
 }

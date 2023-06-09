@@ -14,11 +14,8 @@ import cn.crisp.crispmaintenanceorder.utils.GeoCache;
 import cn.crisp.crispmaintenanceorder.vo.IndentVo;
 import cn.crisp.crispmaintenanceorder.vo.PagingVo;
 import cn.crisp.dto.PayDto;
-import cn.crisp.entity.Address;
-import cn.crisp.entity.Indent;
+import cn.crisp.entity.*;
 import cn.crisp.crispmaintenanceorder.service.IndentService;
-import cn.crisp.entity.IndentImage;
-import cn.crisp.entity.User;
 import cn.crisp.exception.BusinessException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -141,7 +138,11 @@ public class IndentServcieImpl
         //从 es 中查找，减轻数据库的压力
         result.setRecords(
                 pagingVo.getRecords().stream()
-                        .map(id -> esService.docGet(id.toString(), Constants.INDENT_ES_INDEX_NAME, Indent.class))
+                        .map(id -> esService.docGet(
+                                id.toString(),
+                                Constants.INDENT_ES_INDEX_NAME,
+                                Indent.class
+                        ))
                         .collect(Collectors.toList())
         );
         result.setTotal(pagingVo.getTotal());
@@ -162,8 +163,12 @@ public class IndentServcieImpl
                     IndentVo.class
             );
             String authorization = request.getHeader("Authorization");
-            indentVo.setUser(userClient.getUserById(indentVo.getUserId(), authorization).getData());
-            indentVo.setEngineer(userClient.getUserById(indentVo.getEngineerId(), authorization).getData());
+            indentVo.setUser(
+                    userClient.getUserById(indentVo.getUserId(), authorization).getData()
+            );
+            indentVo.setEngineer(
+                    userClient.getUserById(indentVo.getEngineerId(), authorization).getData()
+            );
             //获取订单图片
             indentVo.setImages(indentImageService.getByIndentId(indentVo.getId()));
             return indentVo;
@@ -191,7 +196,10 @@ public class IndentServcieImpl
         }
 
         //获取维修地址
-        R<Address> r = userClient.getAddressById(indentDto.getAddressId(), request.getHeader("Authorization"));
+        R<Address> r = userClient.getAddressById(
+                indentDto.getAddressId(),
+                request.getHeader("Authorization")
+        );
         Address address = r.getData();
         if (address == null) {
             throw new BusinessException(0, "地址不存在");
@@ -229,7 +237,11 @@ public class IndentServcieImpl
         esService.docInsert(order, order.getId().toString(), Constants.INDENT_ES_INDEX_NAME);
 
         //加入 GEO
-        geoCache.add(order.getLongitude().doubleValue(), order.getLatitude().doubleValue(), order.getId());
+        geoCache.add(
+                order.getLongitude().doubleValue(),
+                order.getLatitude().doubleValue(),
+                order.getId()
+        );
 
         return indent;
     }
@@ -436,10 +448,17 @@ public class IndentServcieImpl
             //计算方式是 全部工单的评价 quality / 总工单数目
             QueryWrapper<Indent> wrapper = new QueryWrapper<>();
             wrapper.select("avg(quality) as quality_avg")
-                    .eq("engineer_id", indent.getEngineerId());
-            Double qualityAvg = (Double) indentMapper.selectMaps(wrapper).get(0).get("quality_avg");
+                    .eq("engineer_id", indent.getEngineerId())
+                    .eq("status", Indent.Status.COMPLETED);
+            BigDecimal qualityAvg = (BigDecimal) indentMapper.selectMaps(wrapper).get(0).get("quality_avg");
             //TODO 调用 user 模块，更新维修工程师的 quality
-
+            EngineerAttribute attribute = new EngineerAttribute();
+            attribute.setUserId(indent.getEngineerId());
+            attribute.setQuality(qualityAvg);
+            userClient.updateEngineerAttribute(
+                    attribute,
+                    request.getHeader("Authorization")
+            );
 
             //更新 es
             esService.docInsert(indent, indent.getId().toString(), Constants.INDENT_ES_INDEX_NAME);

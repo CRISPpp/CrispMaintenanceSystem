@@ -209,7 +209,7 @@ public class UserController {
     }
 
     @GetMapping("/engineer_attribute")
-    public R<EngineerAttribute> getEngineerAttribute(HttpServletRequest request) {
+    public R<EngineerAttribute> huogetEngineerAttribute(HttpServletRequest request) {
         User user = tokenService.getLoginUser(request).getUser();
         LambdaQueryWrapper<EngineerAttribute> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(EngineerAttribute::getUserId, user.getId());
