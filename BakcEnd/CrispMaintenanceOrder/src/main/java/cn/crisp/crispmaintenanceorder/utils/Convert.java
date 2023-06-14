@@ -1,19 +1,27 @@
 package cn.crisp.crispmaintenanceorder.utils;
 
 
+import cn.crisp.crispmaintenanceorder.vo.IndentVo;
+import cn.crisp.entity.Indent;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * 类型转换器
  */
+@SuppressWarnings("all")
 public class Convert
 {
     /**
@@ -997,4 +1005,52 @@ public class Convert
         }
         return head + s.replaceAll("(零.)*零元", "元").replaceFirst("(零.)+", "").replaceAll("(零.)+", "零").replaceAll("^整$", "零元整");
     }
+
+    /**
+     * 将 T 对象转换为 E 对象，字段名相同的赋值
+     */
+    public static<T, E> E convert(T t, Class<E> eClass) {
+        Objects.requireNonNull(eClass);
+        // 获取 E 无参构造
+        E e = null;
+        try {
+            e = eClass.newInstance();
+        } catch (Exception exception) {
+            throw new RuntimeException(eClass.getName() + "不存在无参构造器");
+        }
+
+        // t 为空直接返回
+        if (t == null) {
+            return e;
+        }
+
+        // 遍历 E 的全部 setter，从 t 中查找对应的 getter，如果有，赋值
+        for (Method eMethod : setters(eClass)) {
+            String getter = setterToGetter(eMethod.getName());
+            try {
+                Method tMethod = t.getClass().getMethod(getter);
+                eMethod.invoke(e, tMethod.invoke(t));
+            } catch (Exception exception) {
+                // 不存在对应的 getter
+                continue;
+            }
+        }
+        return e;
+    }
+
+    private static<T> List<Method> setters(Class<T> tClass) {
+        List<Method> list = new ArrayList<>();
+        // 获取全部的 public 方法，包括父类
+        for (Method method : tClass.getMethods()) {
+            if (method.getName().matches("set.+")) {
+                list.add(method);
+            }
+        }
+        return list;
+    }
+
+    private static<T> String setterToGetter(String setter) {
+        return ("get" + setter.substring(3)).intern();
+    }
+
 }

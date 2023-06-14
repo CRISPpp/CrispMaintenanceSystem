@@ -94,6 +94,7 @@ public class GeoCache {
         RGeo<String> geo = redissonClient.getGeo(Constants.GEO_NAME, StringCodec.INSTANCE);
         return geo.radius(longitude, latitude, dist, GeoUnit.KILOMETERS)
                 .stream()
+                .filter(str -> str.startsWith(Constants.GEO_INDENT_FIELD_PREFIX))
                 .map(str -> indentId(str))
                 .collect(Collectors.toList());
     }
@@ -122,6 +123,8 @@ public class GeoCache {
         RGeo<String> geo = redissonClient.getGeo(Constants.GEO_NAME, StringCodec.INSTANCE);
         List<Long> totalList = geo.radius(longitude, latitude, dist, GeoUnit.KILOMETERS)
                 .stream()
+                // 过滤调工程师
+                .filter(str -> str.startsWith(Constants.GEO_INDENT_FIELD_PREFIX))
                 .map(str -> indentId(str))
                 .collect(Collectors.toList());
 

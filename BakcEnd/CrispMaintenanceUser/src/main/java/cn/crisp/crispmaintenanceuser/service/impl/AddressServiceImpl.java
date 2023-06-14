@@ -50,13 +50,15 @@ public class AddressServiceImpl
         User user = tokenService.getLoginUser(request).getUser();
         if (user == null) return R.error("登录信息错误");
 
-        List<Address> ret = null;
-        ESMap<Long> esMap = new ESMap("userId", user.getId());
-        List<ESMap> list = new ArrayList<>();
-        list.add(esMap);
-
-        ret = esService.docGet(Constants.ADDRESS_ES_INDEX_NAME, Address.class, list);
-
+//        List<Address> ret = null;
+//        ESMap<Long> esMap = new ESMap("userId", user.getId());
+//        List<ESMap> list = new ArrayList<>();
+//        list.add(esMap);
+//
+//        ret = esService.docGet(Constants.ADDRESS_ES_INDEX_NAME, Address.class, list);
+        LambdaQueryWrapper<Address> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Address::getUserId, user.getId());
+        List<Address> ret = addressMapper.selectList(wrapper);
 
         return R.success(ret);
     }
@@ -131,7 +133,8 @@ public class AddressServiceImpl
     @Override
     public R<String> updateDefault(HttpServletRequest request, Long id) {
         User user = tokenService.getLoginUser(request).getUser();
-        Address address = esService.docGet(id.toString(), Constants.ADDRESS_ES_INDEX_NAME, Address.class);
+//        Address address = esService.docGet(id.toString(), Constants.ADDRESS_ES_INDEX_NAME, Address.class);
+        Address address = addressMapper.selectById(id);
         if (address == null) return R.error("该地址不存在");
         if (!user.getId().equals(address.getUserId())) return R.error("无法使用其他用户的地址");
 

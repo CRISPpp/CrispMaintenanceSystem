@@ -166,8 +166,8 @@ public class IndentController {
      * @param request
      * @return
      */
-    @PutMapping("/pay")
-    public R pay(@RequestParam("indentId") Long indentId, HttpServletRequest request) {
+    @PutMapping("/pay/{indentId}")
+    public R pay(@PathVariable("indentId") Long indentId, HttpServletRequest request) {
         return R.success(indentService.pay(request, indentId));
     }
 

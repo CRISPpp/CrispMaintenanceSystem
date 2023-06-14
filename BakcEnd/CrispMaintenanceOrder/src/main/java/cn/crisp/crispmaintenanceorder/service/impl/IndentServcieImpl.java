@@ -10,6 +10,7 @@ import cn.crisp.crispmaintenanceorder.feign.UserClient;
 import cn.crisp.crispmaintenanceorder.mapper.IndentMapper;
 import cn.crisp.crispmaintenanceorder.security.service.TokenService;
 import cn.crisp.crispmaintenanceorder.service.IndentImageService;
+import cn.crisp.crispmaintenanceorder.utils.Convert;
 import cn.crisp.crispmaintenanceorder.utils.GeoCache;
 import cn.crisp.crispmaintenanceorder.vo.IndentVo;
 import cn.crisp.crispmaintenanceorder.vo.PagingVo;
@@ -135,14 +136,9 @@ public class IndentServcieImpl
                 dispatchDto.getCurrent()
         );
         PagingVo<Indent> result = new PagingVo<Indent>();
-        //从 es 中查找，减轻数据库的压力
         result.setRecords(
                 pagingVo.getRecords().stream()
-                        .map(id -> esService.docGet(
-                                id.toString(),
-                                Constants.INDENT_ES_INDEX_NAME,
-                                Indent.class
-                        ))
+                        .map(indentMapper::selectById)
                         .collect(Collectors.toList())
         );
         result.setTotal(pagingVo.getTotal());
@@ -157,11 +153,7 @@ public class IndentServcieImpl
     @Override
     public Indent getById(Long id, HttpServletRequest request) {
         try {
-            IndentVo indentVo = esService.docGet(
-                    id.toString(),
-                    Constants.INDENT_ES_INDEX_NAME,
-                    IndentVo.class
-            );
+            IndentVo indentVo = Convert.convert(indentMapper.selectById(id), IndentVo.class);
             String authorization = request.getHeader("Authorization");
             indentVo.setUser(
                     userClient.getUserById(indentVo.getUserId(), authorization).getData()
@@ -397,12 +389,12 @@ public class IndentServcieImpl
             try {
                 R<Boolean> r = userClient.pay(payDto, request.getHeader("Authorization"));
                 if (r.getCode() != 1 || r.getData() == false) {
-                    throw new RuntimeException();
+                    throw new RuntimeException(r.getMsg());
                 }
             } catch (Exception e) {
                 indent.setStatus(Indent.Status.UNPAID);
                 esService.docInsert(indent, indentId.toString(), Constants.INDENT_ES_INDEX_NAME);
-                throw new BusinessException(0, "支付失败");
+                throw new BusinessException(0, e.getMessage());
             }
 
         } finally {
